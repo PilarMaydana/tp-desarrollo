@@ -1,0 +1,19 @@
+# Backend
+api/target/
+*.class
+*.log
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Entorno
+.env
+!.env.example
+
+# IDEs y sistema
+.idea/
+.vscode/
+*.iml
+.DS_Store
