@@ -1,5 +1,8 @@
-package ar.edu.utn.frsf.g9.capitalhumano.exception;
+package ar.edu.utn.frsf.g9.capitalhumano.web;
 
+import ar.edu.utn.frsf.g9.capitalhumano.exception.RecursoDuplicadoException;
+import ar.edu.utn.frsf.g9.capitalhumano.exception.RecursoNoEncontradoException;
+import ar.edu.utn.frsf.g9.capitalhumano.exception.ReglaNegocioException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

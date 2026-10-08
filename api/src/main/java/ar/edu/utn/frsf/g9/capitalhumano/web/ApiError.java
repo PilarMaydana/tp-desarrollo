@@ -1,4 +1,4 @@
-package ar.edu.utn.frsf.g9.capitalhumano.exception;
+package ar.edu.utn.frsf.g9.capitalhumano.web;
 
 import java.time.Instant;
 import java.util.List;

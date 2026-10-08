@@ -1,4 +1,8 @@
-package ar.edu.utn.frsf.g9.capitalhumano.exception;
+package ar.edu.utn.frsf.g9.capitalhumano.web;
+
+import ar.edu.utn.frsf.g9.capitalhumano.exception.RecursoDuplicadoException;
+import ar.edu.utn.frsf.g9.capitalhumano.exception.RecursoNoEncontradoException;
+import ar.edu.utn.frsf.g9.capitalhumano.exception.ReglaNegocioException;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
