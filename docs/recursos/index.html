@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alta de Puestos</title>
+    <!-- Fuente Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Iconos Material de Google -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <span class="material-icons menu-icon">menu</span>
+                <span class="material-icons logo-icon">groups</span>
+                <div class="logo-text">
+                    CONSULTORA<br>CAPIT@L HUMANO
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-info">
+                    <div class="avatar">
+                        <span class="material-icons">person</span>
+                    </div>
+                    <span class="user-name">Consultor:<br>Nombre Usuario</span>
+                </div>
+                <div class="topbar-actions">
+                    <div class="icon-btn"><span class="material-icons">notifications</span></div>
+                    <div class="icon-btn"><span class="material-icons">logout</span></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <h1 class="page-title">CREAR NUEVO PUESTO</h1>
+            <hr class="divider">
+
+            <!-- Formulario Superior -->
+            <form class="puesto-form">
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Empresa</label>
+                        <select>
+                            <option value="" disabled selected>Seleccione empresa</option>
+                            <option value="1">Empresa 1</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Nombre del Puesto(*)</label>
+                        <input type="text">
+                    </div>
+                    <div class="input-group">
+                        <label>Código</label>
+                        <input type="text">
+                    </div>
+                </div>
+
+                <div class="form-row full-width">
+                    <div class="input-group">
+                        <label>Descripción</label>
+                        <textarea rows="4"></textarea>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Sección Competencias -->
+            <div class="competencias-container">
+                <!-- Competencias Disponibles -->
+                <div class="competencias-box">
+                    <h2>Competencias disponibles</h2>
+                    <div class="competencias-list">
+                        <label class="checkbox-item">
+                            <input type="checkbox">
+                            <span class="checkbox-custom"></span>
+                            Gestión de proyectos
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox">
+                            <span class="checkbox-custom"></span>
+                            Liderazgo
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox">
+                            <span class="checkbox-custom"></span>
+                            Trabajo en equipo
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox">
+                            <span class="checkbox-custom"></span>
+                            Comunicación
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox">
+                            <span class="checkbox-custom"></span>
+                            Lealtad
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox">
+                            <span class="checkbox-custom"></span>
+                            Compromiso
+                        </label>
+                    </div>
+                    <div class="box-actions">
+                        <button type="button" class="btn-secondary">Agregar</button>
+                    </div>
+                </div>
+
+                <!-- Competencias Seleccionadas -->
+                <div class="competencias-box">
+                    <div class="box-header-cols">
+                        <h2>Competencias</h2>
+                        <h2>Ponderaciones (0-10)</h2>
+                    </div>
+                    <div class="competencias-list empty-state">
+                        <p>Ninguna seleccionada aún</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Acciones -->
+            <div class="form-actions">
+                <button type="button" class="btn-cancel">Cancelar</button>
+                <button type="submit" class="btn-submit">Aceptar</button>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
