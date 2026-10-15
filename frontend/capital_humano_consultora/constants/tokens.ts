@@ -1,0 +1,37 @@
+export const DESIGN_TOKENS = {
+  colors: {
+    primary: '#3F2581',
+    primaryLight: '#896ECB',
+    primarySoft: '#F4F0FF',
+    primaryContainer: '#EADDFF',
+    primaryBorder: '#4F378A',
+    headerBg: '#3B3B3B',
+    sidebarBg: '#2E2E2E',
+    bgCanvas: '#DDDDDD',
+    bgSurface: '#FFFFFF',
+    bgBody: '#F6F6F6',
+    btnGray: '#D8D8D8',
+    btnGrayHover: '#C0C0C0',
+    btnLavender: '#CDCEE6',
+    statusSuccess: '#1B8354',
+    statusError: '#D32F2F',
+    statusNeutral: '#4A4A4A',
+    textDark: '#000000',
+    textMuted: '#757575',
+  },
+  typography: {
+    fontFamily: "'Roboto', sans-serif",
+    sizes: {
+      titlePage: '32px',
+      sectionHeader: '24px',
+      formLabels: '16px',
+      inputBody: '18px',
+      button: '18px',
+    },
+    weights: {
+      regular: 400,
+      medium: 500,
+      bold: 700,
+    },
+  },
+} as const;

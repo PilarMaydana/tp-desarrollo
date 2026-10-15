@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Design Tokens - Consultora Capit@l Humano */
+  --color-primary: #3F2581;
+  --color-primary-light: #896ECB;
+  --color-primary-soft: #F4F0FF;
+  --color-primary-container: #EADDFF;
+  --color-primary-border: #4F378A;
+
+  --color-header-bg: #3B3B3B;
+  --color-sidebar-bg: #2E2E2E;
+  
+  --color-bg-canvas: #DDDDDD;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-body: #F6F6F6;
+
+  --color-btn-gray: #D8D8D8;
+  --color-btn-gray-hover: #C0C0C0;
+  --color-btn-lavender: #CDCEE6;
+  --color-btn-lavender-hover: #B8B9DA;
+
+  --color-status-success: #1B8354;
+  --color-status-error: #D32F2F;
+  --color-status-neutral: #4A4A4A;
+
+  --color-text-dark: #000000;
+  --color-text-muted: #757575;
+  --color-text-light: #FFFFFF;
+  
+  --border-subtle: #CCCCCC;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  --color-primary: var(--color-primary);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-soft: var(--color-primary-soft);
+  --color-primary-container: var(--color-primary-container);
+  
+  --color-header-bg: var(--color-header-bg);
+  --color-sidebar-bg: var(--color-sidebar-bg);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg-canvas: var(--color-bg-canvas);
+  --color-bg-surface: var(--color-bg-surface);
+  --color-bg-body: var(--color-bg-body);
+
+  --color-btn-gray: var(--color-btn-gray);
+  --color-btn-gray-hover: var(--color-btn-gray-hover);
+  --color-btn-lavender: var(--color-btn-lavender);
+
+  --color-status-success: var(--color-status-success);
+  --color-status-error: var(--color-status-error);
+  --color-status-neutral: var(--color-status-neutral);
+
+  --color-text-dark: var(--color-text-dark);
+  --color-text-muted: var(--color-text-muted);
+
+  --font-roboto: var(--font-roboto);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg-canvas);
+  color: var(--color-text-dark);
+  font-family: var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar for list panels */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5b8e8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-light);
 }
