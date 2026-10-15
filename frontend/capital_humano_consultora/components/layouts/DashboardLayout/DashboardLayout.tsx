@@ -12,14 +12,12 @@ export interface DashboardLayoutProps {
 
 function DashboardContent({ children, className = '' }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#DDDDDD] p-2 md:p-6 flex justify-center items-start">
+    <div className="min-h-screen w-full flex flex-col bg-[#F6F6F6]">
       <Sidebar />
-      <div className="w-full max-w-[1880px] bg-white rounded-xl shadow-xl flex flex-col min-h-[calc(100vh-3rem)] overflow-hidden border border-[#CCCCCC]">
-        <Topbar />
-        <main className={`flex-1 p-6 md:p-10 bg-[#F6F6F6] ${className}`}>
-          {children}
-        </main>
-      </div>
+      <Topbar />
+      <main className={`flex-1 w-full px-4 sm:px-8 lg:px-12 py-6 sm:py-8 ${className}`}>
+        {children}
+      </main>
     </div>
   );
 }

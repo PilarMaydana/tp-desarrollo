@@ -24,7 +24,7 @@ export const Topbar: React.FC<TopbarProps> = ({ className = '' }) => {
 
   return (
     <header
-      className={`bg-[#3B3B3B] text-white h-20 px-4 md:px-8 flex items-center justify-between rounded-t-xl shadow-md select-none ${className}`}
+      className={`bg-[#3B3B3B] text-white h-20 px-4 md:px-8 lg:px-12 flex items-center justify-between shadow-md select-none sticky top-0 z-20 w-full ${className}`}
     >
       {/* Sección Izquierda: Menú Hamburguesa + Marca */}
       <div className="flex items-center gap-4 md:gap-6">

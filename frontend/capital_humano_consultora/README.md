@@ -55,7 +55,7 @@ frontend/capital_humano_consultora/
 │   │   └── ActionToolbar/             # Barra de acciones al pie (Aceptar, Cancelar, CRUD)
 │   │
 │   └── layouts/                       # Nivel 4: Plantillas de Página
-│       ├── DashboardLayout/           # Contenedor Figma (canvas #DDDDDD + contenedor #FFFFFF)
+│       ├── DashboardLayout/           # Layout Full-Width (Pantalla completa con Topbar y Sidebar)
 │       └── AuthLayout/                # Tarjeta centrada para Login
 │
 ├── context/                           # Estado Global de React

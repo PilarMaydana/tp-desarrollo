@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${roboto.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-roboto bg-[#DDDDDD] text-[#000000]">
+      <body className="min-h-full flex flex-col font-roboto bg-[#F6F6F6] text-[#000000]">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
