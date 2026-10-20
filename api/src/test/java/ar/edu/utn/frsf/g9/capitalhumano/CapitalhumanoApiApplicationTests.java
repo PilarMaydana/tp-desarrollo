@@ -1,17 +1,14 @@
 package ar.edu.utn.frsf.g9.capitalhumano;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Test de carga del contexto de Spring.
  *
- * <p>Deshabilitado porque requiere una base de datos PostgreSQL activa.
- * Se rehabilita cuando exista el docker-compose con la base de datos.</p>
+ * <p>Verifica que el contexto levante correctamente con la base de datos H2 en memoria.</p>
  */
 @SpringBootTest
-@Disabled("Requiere base de datos PostgreSQL — rehabilitar cuando exista docker-compose")
 class CapitalhumanoApiApplicationTests {
 
     @Test
