@@ -32,7 +32,9 @@ public class SecurityConfig {
         // TODO: reemplazar por autenticación LDAP al implementar el CU 01
         http
                 .csrf(csrf -> csrf.disable())
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().permitAll()
                 );
 
