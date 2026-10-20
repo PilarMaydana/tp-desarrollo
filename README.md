@@ -64,9 +64,8 @@ git push -u origin feat/mi-feature
 ## Estructura del proyecto
 
 ```
-├── api/          # Backend (Spring Boot)
+├── api/          # Backend (Spring Boot + base H2 en memoria)
 ├── frontend/     # Frontend (Next.js)
-├── db/           # Scripts de base de datos / seeds
 ├── docs/         # Documentación del proyecto
 └── .github/      # Templates de PR y CI
 ```
