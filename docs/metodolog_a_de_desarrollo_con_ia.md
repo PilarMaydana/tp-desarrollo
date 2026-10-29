@@ -13,17 +13,34 @@ Antes de tirar la primera línea de código, se debe mapear la arquitectura func
 
 ---
 
-## 2. Organización del Código: Feature Slices
-Para evitar que el agente de IA sufra pérdida de contexto ("Context Drift") o rompa código ajeno, el proyecto no se organiza por capas tecnológicas globales, sino por **Características (Features)**.
+## 2. Organización del Código: Separación por Proyecto y Feature Slices
+Para evitar que el agente de IA sufra pérdida de contexto ("Context Drift") o modifique/rompa código ajeno, el proyecto mantiene **separados los directorios de Backend y Frontend**, pero dentro de cada uno se organiza el código por **Casos de Uso (Features)** en lugar de dispersar la lógica únicamente en capas tecnológicas globales.
+
+No se mezclan frontend y backend dentro de un mismo directorio; cada proyecto vive en su raíz independiente (`api/` y `frontend/`):
 
 ```text
-src/
- └── features/
-      └── nombre-caso-de-uso/
-           ├── backend/          (Controladores, Servicios, DAOs, DTOs)
-           └── frontend/         (Pantalla, llamadas API, Tipos/Interfaces)
+tp-desarrollo/
+ ├── api/                                          # Proyecto Backend (Spring Boot)
+ │    └── src/main/java/.../
+ │         └── features/                           # (O paquetes por caso de uso)
+ │              └── [nombre-caso-de-uso]/
+ │                   ├── controller/               # Endpoints REST del CU
+ │                   ├── service/                  # Lógica de negocio del CU
+ │                   ├── dao/                      # Repositorios / Acceso a datos del CU
+ │                   └── dto/                      # DTOs de entrada y salida del CU
+ │
+ └── frontend/                                     # Proyecto Frontend (Next.js / React)
+      └── [app o features]/
+           └── [nombre-caso-de-uso]/
+                ├── components/                    # Pantallas y componentes del CU
+                ├── services/                      # Llamadas a los endpoints de la API del CU
+                ├── hooks/                         # Lógica y estado de la UI del CU
+                └── types/                         # Interfaces y tipos TypeScript del CU
 ```
-*Regla para la IA:* El agente solo debe recibir contexto y modificar archivos dentro de la carpeta del feature actual.
+
+*Regla para la IA:*
+* **Aislamiento por proyecto y caso de uso:** Al solicitarle una tarea al agente de IA, solo se le debe proporcionar el contexto y alcance de la carpeta del caso de uso sobre el que se esté trabajando en ese momento (en `api/` para tareas de backend, o en `frontend/` para tareas de frontend).
+* **Desarrollo E2E delimitado:** Si se aborda el flujo completo de un caso de uso, se trabaja en fases delimitadas (primero backend en `api/`, luego frontend en `frontend/`), respetando la separación entre proyectos y sin generar acoplamiento indebido en la estructura de carpetas.
 
 ---
 
