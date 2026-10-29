@@ -1,17 +1,20 @@
 export const ROUTES = {
   HOME: '/',
+  DEV: {
+    SANDBOX: '/dev/sandbox',
+  },
   AUTH: {
-    LOGIN: '/login',
+    LOGIN: '/prototipos/login',
   },
   CONSULTOR: {
-    EVALUACIONES: '/evaluaciones/evaluar',
-    REPORTES: '/reportes',
-    PREGUNTAS: '/preguntas',
-    ORDEN_MERITOS: '/orden-meritos',
-    PUESTOS: '/puestos',
-    PUESTOS_NUEVO: '/puestos/nuevo',
+    EVALUACIONES: '/prototipos/evaluaciones/evaluar',
+    REPORTES: '/prototipos/reportes',
+    PREGUNTAS: '/prototipos/preguntas',
+    ORDEN_MERITOS: '/prototipos/orden-meritos',
+    PUESTOS: '/prototipos/puestos',
+    PUESTOS_NUEVO: '/prototipos/puestos/nuevo',
   },
   CANDIDATO: {
-    CUESTIONARIO: '/candidato/cuestionario',
+    CUESTIONARIO: '/prototipos/candidato/cuestionario',
   },
 } as const;
