@@ -35,6 +35,8 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/h2-console/**").permitAll()
+                        // TODO CU 01: exigir autenticación
+                        .requestMatchers("/api/competencias/**").permitAll()
                         .anyRequest().permitAll()
                 );
 
