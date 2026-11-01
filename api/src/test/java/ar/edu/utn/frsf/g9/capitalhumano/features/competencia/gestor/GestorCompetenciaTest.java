@@ -12,6 +12,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -119,5 +121,23 @@ class GestorCompetenciaTest {
                 .hasMessageContaining("COMUNICACIÓN");
 
         verify(competenciaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Listar competencias retorna todos los elementos en formato DTO")
+    void listarCompetencias_retornaLista() {
+        Competencia c1 = new Competencia();
+        c1.setId(1L);
+        c1.setCodigo("COM-01");
+        c1.setNombre("COMUNICACIÓN");
+        c1.setDescripcion("CAPACIDAD DE TRANSMISIÓN");
+
+        when(competenciaDAO.findAll()).thenReturn(List.of(c1));
+
+        List<CompetenciaDTO> resultado = gestorCompetencia.listarCompetencias();
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getId()).isEqualTo(1L);
+        assertThat(resultado.get(0).getCodigo()).isEqualTo("COM-01");
     }
 }

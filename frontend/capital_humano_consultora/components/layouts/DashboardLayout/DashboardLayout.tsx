@@ -7,14 +7,15 @@ import { SidebarProvider } from '@/context/SidebarContext';
 
 export interface DashboardLayoutProps {
   children: React.ReactNode;
+  consultorNombre?: string;
   className?: string;
 }
 
-function DashboardContent({ children, className = '' }: DashboardLayoutProps) {
+function DashboardContent({ children, consultorNombre, className = '' }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen w-full flex flex-col bg-[#F6F6F6]">
       <Sidebar />
-      <Topbar />
+      <Topbar consultorNombre={consultorNombre} />
       <main className={`flex-1 w-full px-4 sm:px-8 lg:px-12 py-6 sm:py-8 ${className}`}>
         {children}
       </main>

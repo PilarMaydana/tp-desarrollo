@@ -84,7 +84,7 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
   };
 
   const handleWeightChange = (id: string, weightVal: number) => {
-    const clamped = Math.max(0, Math.min(10, weightVal || 0));
+    const clamped = Math.max(0, Math.min(10, isNaN(weightVal) ? 0 : weightVal));
     onChange(
       selectedItems.map((item) =>
         item.id === id ? { ...item, weight: clamped } : item
@@ -211,9 +211,13 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
                         type="number"
                         min="0"
                         max="10"
-                        value={item.weight ?? 0}
-                        onChange={(e) => handleWeightChange(item.id, parseInt(e.target.value, 10))}
-                        className="w-16 h-9 px-2 text-center text-sm font-bold text-[#3F2581] bg-[#F4F0FF] border-2 border-[#3F2581] rounded-lg outline-none focus:ring-2 focus:ring-[#896ECB]"
+                        step="0.1"
+                        value={item.weight ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                          handleWeightChange(item.id, val);
+                        }}
+                        className="w-20 h-9 px-2 text-center text-sm font-bold text-[#3F2581] bg-[#F4F0FF] border-2 border-[#3F2581] rounded-lg outline-none focus:ring-2 focus:ring-[#896ECB]"
                       />
                     </div>
                   )}

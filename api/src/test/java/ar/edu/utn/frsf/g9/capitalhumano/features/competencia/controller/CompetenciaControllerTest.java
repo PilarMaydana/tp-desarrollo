@@ -13,12 +13,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -95,5 +98,19 @@ class CompetenciaControllerTest {
                         containsInAnyOrder("codigo", "nombre", "descripcion")));
 
         verify(gestorCompetencia, never()).crearCompetencia(any());
+    }
+
+    @Test
+    @DisplayName("GET /api/competencias retorna 200 OK y la lista de competencias")
+    void listarCompetencias_exitoso200() throws Exception {
+        CompetenciaDTO c1 = new CompetenciaDTO(1L, "COM-01", "COMUNICACIÓN", "CAPACIDAD DE TRANSMITIR IDEAS");
+        when(gestorCompetencia.listarCompetencias()).thenReturn(List.of(c1));
+
+        mockMvc.perform(get("/api/competencias"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].codigo").value("COM-01"))
+                .andExpect(jsonPath("$[0].nombre").value("COMUNICACIÓN"));
     }
 }

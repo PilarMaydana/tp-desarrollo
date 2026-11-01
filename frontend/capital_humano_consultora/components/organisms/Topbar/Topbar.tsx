@@ -7,13 +7,23 @@ import { UserProfileBadge } from '@/components/molecules/UserProfileBadge';
 import { Icon } from '@/components/ui/Icon';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes';
+import { User } from '@/types/auth';
 
 export interface TopbarProps {
+  consultorNombre?: string;
   className?: string;
 }
 
-export const Topbar: React.FC<TopbarProps> = ({ className = '' }) => {
-  const { user, logout, role, switchRole } = useAuth();
+const DEFAULT_MOCK_CONSULTOR: User = {
+  id: 'usr-default-consultor',
+  name: 'LIC. MARTÍN GÓMEZ',
+  username: 'mgomez',
+  email: 'martin.gomez@consultora.com',
+  role: 'CONSULTOR',
+};
+
+export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' }) => {
+  const { user, logout } = useAuth();
   const { toggle } = useSidebar();
   const router = useRouter();
 
@@ -21,6 +31,17 @@ export const Topbar: React.FC<TopbarProps> = ({ className = '' }) => {
     logout();
     router.push(ROUTES.AUTH.LOGIN);
   };
+
+  // Resolver usuario a mostrar: parámetro explícito > usuario autenticado > mockup por defecto
+  const displayUser: User = consultorNombre
+    ? {
+        id: 'usr-custom',
+        name: consultorNombre,
+        username: consultorNombre.toLowerCase().replace(/\s+/g, '.'),
+        email: `${consultorNombre.toLowerCase().replace(/\s+/g, '.')}@consultora.com`,
+        role: 'CONSULTOR',
+      }
+    : user || DEFAULT_MOCK_CONSULTOR;
 
   return (
     <header
@@ -47,27 +68,9 @@ export const Topbar: React.FC<TopbarProps> = ({ className = '' }) => {
         </div>
       </div>
 
-      {/* Sección Derecha: Usuario + Acciones */}
+      {/* Sección Derecha: Usuario Consultor + Acciones */}
       <div className="flex items-center gap-3 md:gap-6">
-        {/* Switch rápido de rol para testing de interfaz */}
-        <button
-          type="button"
-          onClick={() => {
-            const nextRole = role === 'CONSULTOR' ? 'CANDIDATO' : 'CONSULTOR';
-            switchRole(nextRole);
-            if (nextRole === 'CANDIDATO') {
-              router.push(ROUTES.CANDIDATO.CUESTIONARIO);
-            } else {
-              router.push(ROUTES.CONSULTOR.PUESTOS);
-            }
-          }}
-          className="hidden lg:inline-flex items-center text-xs px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/90 border border-white/20 transition-all cursor-pointer"
-          title="Cambiar rol para probar interfaz"
-        >
-          Rol: <strong className="ml-1 text-white underline">{role}</strong> (Cambiar)
-        </button>
-
-        <UserProfileBadge user={user} />
+        <UserProfileBadge user={displayUser} />
 
         <div className="flex items-center gap-2">
           {/* Notificaciones */}
