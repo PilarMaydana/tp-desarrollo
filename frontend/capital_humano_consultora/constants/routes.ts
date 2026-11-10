@@ -10,7 +10,7 @@ export const ROUTES = {
   CONSULTOR: {
     EVALUACIONES: '/en-desarrollo?modulo=Evaluación+de+Candidatos',
     REPORTES: '/en-desarrollo?modulo=Reportes',
-    PREGUNTAS: '/en-desarrollo?modulo=Gestión+de+Preguntas',
+    PREGUNTAS: '/preguntas',
     ORDEN_MERITOS: '/en-desarrollo?modulo=Orden+de+Méritos',
     PUESTOS: '/puestos/nuevo',
     PUESTOS_NUEVO: '/puestos/nuevo',
