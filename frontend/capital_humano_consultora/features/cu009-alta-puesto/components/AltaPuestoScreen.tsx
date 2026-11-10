@@ -9,7 +9,6 @@ import { DualTransferList, TransferItem } from '@/components/organisms/DualTrans
 import { ActionToolbar } from '@/components/organisms/ActionToolbar';
 import { Button } from '@/components/ui/Button';
 import { ModalConfirmacionExito } from './ModalConfirmacionExito';
-import { AlertaErrores } from './AlertaErrores';
 import { useAltaPuesto, UseAltaPuestoOptions } from '../hooks/useAltaPuesto';
 import { AltaPuestoFormData } from '../schemas/altaPuesto.schema';
 
@@ -41,9 +40,6 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
     isSubmitting,
     competenciasDisponibles,
     isLoadingCompetencias,
-    mensajeErrorGeneral,
-    listaErrores,
-    dismissErrores,
     isSuccessModalOpen,
     puestoCreadoNombre,
     handleCargarOtro,
@@ -75,19 +71,6 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
           {subtitulo}
         </p>
       </div>
-
-      {/* Flujo 2.A y 2.B: Alertas visibles de errores u omisiones simultáneas */}
-      <AlertaErrores
-        titulo={
-          mensajeErrorGeneral?.toLowerCase().includes('duplicado') ||
-          mensajeErrorGeneral?.toLowerCase().includes('existe')
-            ? 'Conflicto: Código o nombre existente (Flujo 2.B)'
-            : 'Atención: Datos obligatorios incompletos (Flujo 2.A)'
-        }
-        mensajeGeneral={mensajeErrorGeneral}
-        errores={listaErrores}
-        onDismiss={dismissErrores}
-      />
 
       {/* Formulario Principal (Paso 1 y 2) */}
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-7">
