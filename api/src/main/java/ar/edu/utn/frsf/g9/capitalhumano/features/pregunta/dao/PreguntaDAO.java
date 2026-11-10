@@ -67,3 +67,4 @@ public interface PreguntaDAO extends JpaRepository<Pregunta, Long> {
      */
     boolean existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(Long factorId, String enunciado, Long id);
 }
+

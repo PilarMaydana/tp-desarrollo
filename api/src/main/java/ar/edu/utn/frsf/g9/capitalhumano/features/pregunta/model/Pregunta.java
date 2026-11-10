@@ -123,3 +123,4 @@ public class Pregunta extends EntidadAuditable {
         this.opciones = opciones != null ? opciones : new ArrayList<>();
     }
 }
+

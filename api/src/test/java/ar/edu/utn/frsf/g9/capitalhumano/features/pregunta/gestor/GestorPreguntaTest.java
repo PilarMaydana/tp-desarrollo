@@ -349,3 +349,4 @@ class GestorPreguntaTest {
         verify(preguntaDAO, never()).save(any());
     }
 }
+
