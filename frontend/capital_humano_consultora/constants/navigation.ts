@@ -36,7 +36,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Puestos',
-    href: ROUTES.CONSULTOR.PUESTOS,
+    href: ROUTES.CONSULTOR.PUESTOS_NUEVO,
     icon: 'work',
     roles: ['CONSULTOR'],
   },

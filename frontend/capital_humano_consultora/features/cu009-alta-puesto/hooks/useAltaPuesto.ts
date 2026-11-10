@@ -226,13 +226,13 @@ export function useAltaPuesto(options: UseAltaPuestoOptions = {}) {
   // Opción "No" en el modal: Finaliza el caso de uso
   const handleFinalizar = useCallback(() => {
     setIsSuccessModalOpen(false);
-    const redirectUrl = options.onSuccessRedirect || ROUTES.CONSULTOR.PUESTOS;
+    const redirectUrl = options.onSuccessRedirect || ROUTES.CONSULTOR.PUESTOS_NUEVO;
     router.push(redirectUrl);
   }, [options.onSuccessRedirect, router]);
 
   // Botón Cancelar del formulario
   const handleCancelar = useCallback(() => {
-    const redirectUrl = options.onCancelRedirect || ROUTES.CONSULTOR.PUESTOS;
+    const redirectUrl = options.onCancelRedirect || ROUTES.CONSULTOR.PUESTOS_NUEVO;
     router.push(redirectUrl);
   }, [options.onCancelRedirect, router]);
 
