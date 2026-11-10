@@ -4,11 +4,20 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.factor.model.Factor;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * DAO para el acceso a datos de la entidad {@link Factor} (CU 017).
  */
 public interface FactorDAO extends JpaRepository<Factor, Long> {
+
+    /**
+     * Busca un factor por su código.
+     *
+     * @param codigo código normalizado en mayúsculas
+     * @return factor encontrado o empty
+     */
+    Optional<Factor> findByCodigo(String codigo);
 
     /**
      * Verifica si ya existe un factor registrado con el código especificado.
@@ -42,5 +51,12 @@ public interface FactorDAO extends JpaRepository<Factor, Long> {
      * @return lista de factores asociados
      */
     List<Factor> findByCompetenciaIdOrderByNroOrdenAsc(Long competenciaId);
-}
 
+    /**
+     * Obtiene los factores asociados al código de una competencia ordenados por número de orden ascendente.
+     *
+     * @param codigoCompetencia código de la competencia
+     * @return lista de factores asociados
+     */
+    List<Factor> findByCompetenciaCodigoOrderByNroOrdenAsc(String codigoCompetencia);
+}

@@ -8,7 +8,8 @@ INSERT INTO competencia (codigo, nombre, descripcion) VALUES
 
 INSERT INTO factor (codigo, nombre, descripcion, nro_orden, competencia_id, eliminado) VALUES
     ('FAC-01', 'COMUNICACIÓN ORAL', 'CAPACIDAD PARA TRANSMITIR INFORMACIÓN DE MANERA VERBAL CLARA.', 1, 1, FALSE),
-    ('FAC-02', 'COMUNICACIÓN ESCRITA', 'CAPACIDAD PARA REDACTAR DOCUMENTOS DE MANERA ESTRUCTURADA.', 2, 1, FALSE);
+    ('FAC-02', 'COMUNICACIÓN ESCRITA', 'CAPACIDAD PARA REDACTAR DOCUMENTOS DE MANERA ESTRUCTURADA.', 2, 1, FALSE),
+    ('FAC-03', 'TOMA DE DECISIONES', 'CAPACIDAD PARA ADOPTAR DECISIONES FIRMES Y OPORTUNAS.', 1, 2, FALSE);
 
 INSERT INTO puesto (codigo, nombre, descripcion, empresa, eliminado) VALUES
     ('DEV-01', 'DESARROLLADOR SENIOR', 'DESARROLLO Y ARQUITECTURA DE SOFTWARE.', 'TECH SOLUTIONS', FALSE),
@@ -19,3 +20,11 @@ INSERT INTO caracteristica_puesto (puesto_id, competencia_id, ponderacion_requer
     (1, 3, 9.0),
     (2, 1, 7.5),
     (2, 4, 8.5);
+
+INSERT INTO pregunta (nombre, enunciado, descripcion, factor_id, eliminado) VALUES
+    ('COMUNICACIÓN ASERTIVA', '¿CÓMO COMUNICA SUS IDEAS ANTE SITUACIONES DE CONFLICTO?', 'EVALÚA LA CAPACIDAD DE TRANSMITIR CON RESPETO Y FIRMEZA.', 1, FALSE);
+
+INSERT INTO opcion_respuesta (pregunta_id, orden, nombre, descripcion, ponderacion, eliminado) VALUES
+    (1, 1, 'NUNCA', 'NUNCA LOGRA TRANSMITIR CON CLARIDAD', 0.0, FALSE),
+    (1, 2, 'A VECES', 'TRANSMITE CON CLARIDAD EN OCASIONES', 5.0, FALSE),
+    (1, 3, 'SIEMPRE', 'SIEMPRE TRANSMITE CON RESPETO Y CLARIDAD', 5.0, FALSE);
