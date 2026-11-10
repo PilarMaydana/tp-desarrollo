@@ -6,6 +6,7 @@ import { Icon } from '../Icon';
 export interface SelectOption {
   value: string | number;
   label: string;
+  disabled?: boolean;
 }
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -32,12 +33,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           {...props}
         >
           {placeholder && (
-            <option value="" disabled className="text-gray-400">
+            <option value="" className="text-gray-400">
               {placeholder}
             </option>
           )}
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
+            <option key={opt.value} value={opt.value} disabled={opt.disabled}>
               {opt.label}
             </option>
           ))}
