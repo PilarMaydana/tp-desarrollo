@@ -4,11 +4,28 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.factor.model.Factor;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * DAO para el acceso a datos de la entidad {@link Factor} (CU 017).
  */
 public interface FactorDAO extends JpaRepository<Factor, Long> {
+
+    /**
+     * Busca un factor por su código único.
+     *
+     * @param codigo código del factor
+     * @return factor encontrado o vacío
+     */
+    Optional<Factor> findByCodigo(String codigo);
+
+    /**
+     * Busca un factor activo (no eliminado lógicamente) por su código.
+     *
+     * @param codigo código del factor
+     * @return factor activo encontrado o vacío
+     */
+    Optional<Factor> findByCodigoAndEliminadoFalse(String codigo);
 
     /**
      * Verifica si ya existe un factor registrado con el código especificado.

@@ -40,6 +40,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/puestos/**").permitAll()
                         // TODO CU 01: exigir autenticación
                         .requestMatchers("/api/factores/**").permitAll()
+                        // TODO CU 01: exigir autenticación
+                        .requestMatchers("/api/preguntas/**").permitAll()
                         .anyRequest().permitAll()
                 );
 
