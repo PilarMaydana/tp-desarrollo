@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Controller } from 'react-hook-form';
+import { Controller, FieldErrors } from 'react-hook-form';
 import { NotchedField } from '@/components/molecules/NotchedField';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { ModalConfirmacionExito } from './ModalConfirmacionExito';
 import { AlertaErrores } from './AlertaErrores';
 import { useAltaPuesto, UseAltaPuestoOptions } from '../hooks/useAltaPuesto';
+import { AltaPuestoFormData } from '../schemas/altaPuesto.schema';
 
 export interface AltaPuestoScreenProps extends UseAltaPuestoOptions {
   consultorNombre?: string;
@@ -61,7 +62,6 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
     id: String(c.id),
     label: c.nombre,
     subtitle: c.descripcion,
-    weight: 5,
   }));
 
   return (
@@ -233,7 +233,7 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
                   newSelectedItems.map((item) => ({
                     competenciaId: item.id,
                     nombre: item.label,
-                    ponderacion: item.weight ?? 5,
+                    ponderacion: item.weight,
                   }))
                 );
               };
@@ -251,9 +251,14 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
             }}
           />
 
-          {errors.caracteristicas?.message && (
+          {errors.caracteristicas && (
             <span className="text-xs text-[#D32F2F] font-semibold mt-1">
-              {errors.caracteristicas.message}
+              {errors.caracteristicas.message ||
+                (Array.isArray(errors.caracteristicas) &&
+                  (errors.caracteristicas as (FieldErrors<AltaPuestoFormData['caracteristicas'][number]> | undefined)[]).some(
+                    (c) => c?.ponderacion?.message
+                  ) &&
+                  'Debe ingresar una ponderación válida (entre 0 y 10) para cada competencia')}
             </span>
           )}
         </div>

@@ -112,6 +112,16 @@ export function useAltaPuesto(options: UseAltaPuestoOptions = {}) {
     }
     if (fieldErrors.caracteristicas?.message) {
       listado.push({ campo: 'Características', mensaje: String(fieldErrors.caracteristicas.message) });
+    } else if (Array.isArray(fieldErrors.caracteristicas)) {
+      const hasInvalidWeight = (
+        fieldErrors.caracteristicas as (FieldErrors<AltaPuestoFormData['caracteristicas'][number]> | undefined)[]
+      ).some((c) => c?.ponderacion?.message);
+      if (hasInvalidWeight) {
+        listado.push({
+          campo: 'Características',
+          mensaje: 'Debe ingresar una ponderación válida (entre 0 y 10) para cada competencia',
+        });
+      }
     }
 
     setMensajeErrorGeneral('Datos obligatorios incompletos. Por favor revise los campos indicados.');
