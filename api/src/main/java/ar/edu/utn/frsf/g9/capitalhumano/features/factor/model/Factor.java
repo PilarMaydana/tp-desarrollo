@@ -106,3 +106,4 @@ public class Factor extends EntidadAuditable {
         this.competencia = competencia;
     }
 }
+

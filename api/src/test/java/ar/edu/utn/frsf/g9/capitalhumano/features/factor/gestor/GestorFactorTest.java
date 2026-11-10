@@ -203,3 +203,4 @@ class GestorFactorTest {
         assertThat(resultado.get(0).getCompetenciaId()).isEqualTo(1L);
     }
 }
+

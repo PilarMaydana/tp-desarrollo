@@ -73,3 +73,4 @@ public class FactorController {
         return ResponseEntity.ok(gestorFactor.listarFactores());
     }
 }
+

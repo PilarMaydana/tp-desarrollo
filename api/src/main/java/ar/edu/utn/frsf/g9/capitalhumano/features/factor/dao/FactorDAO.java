@@ -43,3 +43,4 @@ public interface FactorDAO extends JpaRepository<Factor, Long> {
      */
     List<Factor> findByCompetenciaIdOrderByNroOrdenAsc(Long competenciaId);
 }
+

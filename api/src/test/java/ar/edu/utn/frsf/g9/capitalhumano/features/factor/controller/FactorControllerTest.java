@@ -219,3 +219,4 @@ class FactorControllerTest {
                 .andExpect(jsonPath("$[0].codigo").value("FAC-01"));
     }
 }
+
