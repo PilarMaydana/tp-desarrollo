@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DTO para la transferencia de datos en la búsqueda, alta y modificación de Preguntas (CU 020).
+ * DTO para la transferencia de datos en la búsqueda, alta y modificación de Preguntas (CU 020 / CU 021).
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PreguntaDTO {
@@ -22,26 +22,30 @@ public class PreguntaDTO {
 
     private String factor;
 
-    @JsonAlias({"factor_codigo", "codigoFactor"})
+    @JsonAlias({"factor_codigo", "codigoFactor", "factorCodigo"})
     private String factorCodigo;
+
+    @JsonAlias({"codigoCompetencia", "competenciaCodigo"})
+    private String codigoCompetencia;
 
     @JsonAlias({"factor_id"})
     private Long factorId;
 
-    @NotBlank(message = "El nombre de la pregunta es obligatorio")
+    @NotBlank(message = "El nombre es obligatorio")
     @Size(max = 255, message = "El nombre de la pregunta no puede superar los 255 caracteres")
     private String nombre;
 
-    @NotBlank(message = "El enunciado de la pregunta es obligatorio")
+    @NotBlank(message = "El enunciado es obligatorio")
     @Size(max = 1000, message = "El enunciado de la pregunta no puede superar los 1000 caracteres")
     private String enunciado;
 
     @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
     private String descripcion;
 
-    @NotNull(message = "La pregunta debe tener opciones de respuesta")
-    @Size(min = 2, message = "La pregunta debe tener al menos 2 opciones de respuesta")
+    @NotNull(message = "Las opciones de respuesta son obligatorias")
+    @Size(min = 2, message = "Debe ingresar al menos 2 opciones de respuesta")
     @Valid
+    @JsonAlias({"opciones", "opcionesRespuesta", "opciones_respuesta"})
     private List<OpcionRespuestaDTO> opciones = new ArrayList<>();
 
     public PreguntaDTO() {
@@ -67,6 +71,16 @@ public class PreguntaDTO {
         this.descripcion = descripcion;
         this.opciones = opciones != null ? opciones : new ArrayList<>();
     }
+
+    public PreguntaDTO(Long id, String nombre, String enunciado, String descripcion, String codigoFactor, List<OpcionRespuestaDTO> opcionesRespuesta) {
+        this.id = id;
+        this.nombre = nombre;
+        this.enunciado = enunciado;
+        this.descripcion = descripcion;
+        this.factorCodigo = codigoFactor;
+        this.opciones = opcionesRespuesta != null ? opcionesRespuesta : new ArrayList<>();
+    }
+
 
     public Long getId() {
         return id;
@@ -98,6 +112,22 @@ public class PreguntaDTO {
 
     public void setFactorCodigo(String factorCodigo) {
         this.factorCodigo = factorCodigo;
+    }
+
+    public String getCodigoFactor() {
+        return factorCodigo;
+    }
+
+    public void setCodigoFactor(String codigoFactor) {
+        this.factorCodigo = codigoFactor;
+    }
+
+    public String getCodigoCompetencia() {
+        return codigoCompetencia;
+    }
+
+    public void setCodigoCompetencia(String codigoCompetencia) {
+        this.codigoCompetencia = codigoCompetencia;
     }
 
     public Long getFactorId() {
@@ -139,5 +169,12 @@ public class PreguntaDTO {
     public void setOpciones(List<OpcionRespuestaDTO> opciones) {
         this.opciones = opciones != null ? opciones : new ArrayList<>();
     }
-}
 
+    public List<OpcionRespuestaDTO> getOpcionesRespuesta() {
+        return opciones;
+    }
+
+    public void setOpcionesRespuesta(List<OpcionRespuestaDTO> opcionesRespuesta) {
+        this.opciones = opcionesRespuesta != null ? opcionesRespuesta : new ArrayList<>();
+    }
+}

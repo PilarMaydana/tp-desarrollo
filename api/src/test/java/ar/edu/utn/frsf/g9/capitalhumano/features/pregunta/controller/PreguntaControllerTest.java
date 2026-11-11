@@ -5,6 +5,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.gestor.GestorPregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.web.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Tests para {@link PreguntaController} con MockMvc.
+ * Tests para {@link PreguntaController} con MockMvc (CU 020 / CU 021).
  */
 @ExtendWith(MockitoExtension.class)
 class PreguntaControllerTest {
@@ -137,8 +138,8 @@ class PreguntaControllerTest {
                 "¿Para qué sirve el patrón Singleton?",
                 "Pregunta de arquitectura",
                 List.of(
-                        new OpcionRespuestaDTO("Instancia única", "Garantiza una única instancia", 1.0),
-                        new OpcionRespuestaDTO("Múltiples instancias", "Crea muchas instancias", 0.0)
+                        new OpcionRespuestaDTO("Instancia única", "Garantiza una única instancia", 5.0),
+                        new OpcionRespuestaDTO("Múltiples instancias", "Crea muchas instancias", 5.0)
                 )
         );
 
@@ -151,8 +152,8 @@ class PreguntaControllerTest {
                   "enunciado": "¿Para qué sirve el patrón Singleton?",
                   "descripcion": "Pregunta de arquitectura",
                   "opciones": [
-                    { "nombre": "Instancia única", "descripcion": "Garantiza una única instancia", "ponderacion": 1.0 },
-                    { "nombre": "Múltiples instancias", "descripcion": "Crea muchas instancias", "ponderacion": 0.0 }
+                    { "nombre": "Instancia única", "descripcion": "Garantiza una única instancia", "ponderacion": 5.0 },
+                    { "nombre": "Múltiples instancias", "descripcion": "Crea muchas instancias", "ponderacion": 5.0 }
                   ]
                 }
                 """;
@@ -165,6 +166,54 @@ class PreguntaControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.nombre").value("Patrones de Diseño"))
                 .andExpect(jsonPath("$.opciones", hasSize(2)));
+    }
+
+    @Test
+    @DisplayName("POST /api/preguntas con formato CU-021 (codigoFactor y opcionesRespuesta) retorna HTTP 201 Created")
+    void crearPregunta_exitoso201_cu021() throws Exception {
+        List<OpcionRespuestaDTO> opciones = List.of(
+                new OpcionRespuestaDTO(1L, 1, "NUNCA", "NUNCA TRANSMITE", 0.0),
+                new OpcionRespuestaDTO(2L, 2, "SIEMPRE", "SIEMPRE TRANSMITE", 10.0)
+        );
+        PreguntaDTO respuesta = new PreguntaDTO(1L, "COMUNICACIÓN ASERTIVA", "¿CÓMO COMUNICA SUS IDEAS?", "DESCRIPCION", "FAC-COM-01", opciones);
+        respuesta.setCodigoCompetencia("COM-01");
+
+        when(gestorPregunta.crearPregunta(any(PreguntaDTO.class))).thenReturn(respuesta);
+
+        String jsonRequest = """
+                {
+                  "nombre": "Comunicación Asertiva",
+                  "enunciado": "¿Cómo comunica sus ideas?",
+                  "descripcion": "Descripción",
+                  "codigoFactor": "FAC-COM-01",
+                  "opcionesRespuesta": [
+                    {
+                      "orden": 1,
+                      "nombre": "Nunca",
+                      "descripcion": "Nunca transmite",
+                      "ponderacion": 0.0
+                    },
+                    {
+                      "orden": 2,
+                      "nombre": "Siempre",
+                      "descripcion": "Siempre transmite",
+                      "ponderacion": 10.0
+                    }
+                  ]
+                }
+                """;
+
+        mockMvc.perform(post("/api/preguntas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nombre").value("COMUNICACIÓN ASERTIVA"))
+                .andExpect(jsonPath("$.enunciado").value("¿CÓMO COMUNICA SUS IDEAS?"))
+                .andExpect(jsonPath("$.codigoFactor").value("FAC-COM-01"))
+                .andExpect(jsonPath("$.opcionesRespuesta", hasSize(2)));
+
+        verify(gestorPregunta).crearPregunta(any(PreguntaDTO.class));
     }
 
     @Test
@@ -202,8 +251,8 @@ class PreguntaControllerTest {
                   "nombre": "POO",
                   "enunciado": "¿Qué es la POO?",
                   "opciones": [
-                    { "nombre": "A", "ponderacion": 1.0 },
-                    { "nombre": "B", "ponderacion": 0.0 }
+                    { "nombre": "A", "ponderacion": 5.0 },
+                    { "nombre": "B", "ponderacion": 5.0 }
                   ]
                 }
                 """;
@@ -214,6 +263,43 @@ class PreguntaControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
+    }
+
+    @Test
+    @DisplayName("POST /api/preguntas con ponderaciones inválidas retorna HTTP 422 Unprocessable Entity")
+    void crearPregunta_reglaNegocioViolada422() throws Exception {
+        when(gestorPregunta.crearPregunta(any(PreguntaDTO.class)))
+                .thenThrow(new ReglaNegocioException("La suma de las ponderaciones de las opciones de respuesta debe ser exactamente 10 puntos (suma actual: 8.0)"));
+
+        String jsonRequest = """
+                {
+                  "nombre": "Pregunta Invalida",
+                  "enunciado": "¿Pregunta invalida?",
+                  "codigoFactor": "FAC-COM-01",
+                  "opcionesRespuesta": [
+                    {
+                      "orden": 1,
+                      "nombre": "Opción 1",
+                      "descripcion": "Desc 1",
+                      "ponderacion": 4.0
+                    },
+                    {
+                      "orden": 2,
+                      "nombre": "Opción 2",
+                      "descripcion": "Desc 2",
+                      "ponderacion": 4.0
+                    }
+                  ]
+                }
+                """;
+
+        mockMvc.perform(post("/api/preguntas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.codigo").value("REGLA_NEGOCIO"))
+                .andExpect(jsonPath("$.mensaje").value("La suma de las ponderaciones de las opciones de respuesta debe ser exactamente 10 puntos (suma actual: 8.0)"));
     }
 
     @Test
@@ -298,4 +384,3 @@ class PreguntaControllerTest {
                 .andExpect(jsonPath("$.status").value(404));
     }
 }
-

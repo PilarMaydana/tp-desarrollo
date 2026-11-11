@@ -59,5 +59,12 @@ public interface FactorDAO extends JpaRepository<Factor, Long> {
      * @return lista de factores asociados
      */
     List<Factor> findByCompetenciaIdOrderByNroOrdenAsc(Long competenciaId);
-}
 
+    /**
+     * Obtiene los factores asociados al código de una competencia ordenados por número de orden ascendente.
+     *
+     * @param codigoCompetencia código de la competencia
+     * @return lista de factores asociados
+     */
+    List<Factor> findByCompetenciaCodigoOrderByNroOrdenAsc(String codigoCompetencia);
+}

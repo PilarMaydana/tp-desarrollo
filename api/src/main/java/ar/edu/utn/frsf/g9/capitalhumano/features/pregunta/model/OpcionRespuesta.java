@@ -11,7 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
- * Entidad JPA que representa una Opción de Respuesta vinculada a una Pregunta (CU 020).
+ * Entidad JPA que representa una Opción de Respuesta vinculada a una Pregunta (CU 020 / CU 021).
  */
 @Entity
 @Table(name = "opcion_respuesta")
@@ -46,6 +46,14 @@ public class OpcionRespuesta {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.nroOrden = nroOrden;
+        this.ponderacion = ponderacion;
+    }
+
+    public OpcionRespuesta(Long id, Integer orden, String nombre, String descripcion, Double ponderacion) {
+        this.id = id;
+        this.nroOrden = orden;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
         this.ponderacion = ponderacion;
     }
 
@@ -89,6 +97,14 @@ public class OpcionRespuesta {
         this.nroOrden = nroOrden;
     }
 
+    public Integer getOrden() {
+        return nroOrden;
+    }
+
+    public void setOrden(Integer orden) {
+        this.nroOrden = orden;
+    }
+
     public Double getPonderacion() {
         return ponderacion;
     }
@@ -97,4 +113,3 @@ public class OpcionRespuesta {
         this.ponderacion = ponderacion;
     }
 }
-

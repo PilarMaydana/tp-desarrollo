@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS competencia (
     codigo VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(100) NOT NULL UNIQUE,
     descripcion VARCHAR(500) NOT NULL,
+    tipo VARCHAR(50),
     eliminado BOOLEAN NOT NULL DEFAULT FALSE,
     fecha_eliminacion TIMESTAMP,
     usuario_eliminacion BIGINT

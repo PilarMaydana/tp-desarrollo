@@ -1,5 +1,6 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dao;
 
+import ar.edu.utn.frsf.g9.capitalhumano.features.factor.model.Factor;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.Pregunta;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * DAO para el acceso a datos y consultas de la entidad {@link Pregunta} (CU 020).
+ * DAO para el acceso a datos y consultas de la entidad {@link Pregunta} (CU 020 / CU 021).
  */
 public interface PreguntaDAO extends JpaRepository<Pregunta, Long> {
 
@@ -66,5 +67,17 @@ public interface PreguntaDAO extends JpaRepository<Pregunta, Long> {
      * Verifica si existe otra pregunta activa en el factor con el mismo enunciado (para modificación).
      */
     boolean existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(Long factorId, String enunciado, Long id);
-}
 
+    /**
+     * Métodos adicionales para compatibilidad con CU 021
+     */
+    boolean existsByFactorAndNombre(Factor factor, String nombre);
+
+    boolean existsByFactorAndEnunciado(Factor factor, String enunciado);
+
+    boolean existsByFactorCodigoAndNombre(String codigoFactor, String nombre);
+
+    boolean existsByFactorCodigoAndEnunciado(String codigoFactor, String enunciado);
+
+    List<Pregunta> findByFactorCodigo(String codigoFactor);
+}

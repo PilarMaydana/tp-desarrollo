@@ -1,6 +1,8 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.gestor;
 
+import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.dao.CompetenciaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.dao.FactorDAO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.factor.dto.FactorDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.model.Factor;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dao.PreguntaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.OpcionRespuestaDTO;
@@ -10,20 +12,23 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.OpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.Pregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.security.ContextoSeguridad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Gestor de lógica de negocio para la gestión de Preguntas (CU 020).
+ * Gestor de lógica de negocio para la gestión de Preguntas (CU 020 / CU 021).
  */
 @Service
 public class GestorPregunta {
@@ -32,12 +37,22 @@ public class GestorPregunta {
 
     private final PreguntaDAO preguntaDAO;
     private final FactorDAO factorDAO;
+    private final CompetenciaDAO competenciaDAO;
     private final ContextoSeguridad contextoSeguridad;
 
-    public GestorPregunta(PreguntaDAO preguntaDAO, FactorDAO factorDAO, ContextoSeguridad contextoSeguridad) {
+    @Autowired
+    public GestorPregunta(PreguntaDAO preguntaDAO,
+                          FactorDAO factorDAO,
+                          CompetenciaDAO competenciaDAO,
+                          ContextoSeguridad contextoSeguridad) {
         this.preguntaDAO = preguntaDAO;
         this.factorDAO = factorDAO;
+        this.competenciaDAO = competenciaDAO;
         this.contextoSeguridad = contextoSeguridad;
+    }
+
+    public GestorPregunta(PreguntaDAO preguntaDAO, FactorDAO factorDAO, ContextoSeguridad contextoSeguridad) {
+        this(preguntaDAO, factorDAO, null, contextoSeguridad);
     }
 
     /**
@@ -99,16 +114,18 @@ public class GestorPregunta {
         // 2. Normalización de campos
         String nombre = dto.getNombre() != null ? dto.getNombre().trim() : "";
         String enunciado = dto.getEnunciado() != null ? dto.getEnunciado().trim() : "";
-        String descripcion = dto.getDescripcion() != null ? dto.getDescripcion().trim() : null;
+        String descripcion = (dto.getDescripcion() != null && !dto.getDescripcion().isBlank())
+                ? dto.getDescripcion().trim()
+                : null;
 
         if (nombre.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de la pregunta es obligatorio");
+            throw new ReglaNegocioException("El nombre es obligatorio");
         }
         if (enunciado.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El enunciado de la pregunta es obligatorio");
+            throw new ReglaNegocioException("El enunciado es obligatorio");
         }
         if (dto.getOpciones() == null || dto.getOpciones().size() < 2) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La pregunta debe tener al menos 2 opciones de respuesta");
+            throw new ReglaNegocioException("Debe ingresar al menos 2 opciones de respuesta");
         }
 
         // 3. Validar unicidad de nombre y enunciado dentro del factor
@@ -119,7 +136,23 @@ public class GestorPregunta {
             throw new RecursoDuplicadoException("Ya existe una pregunta con el enunciado '" + enunciado + "' para el factor seleccionado");
         }
 
-        // 4. Construcción de entidad Pregunta y Opciones
+        // 4. Validar ponderaciones (deben ser >= 0 y sumar exactamente 10.0)
+        double sumaPonderaciones = 0.0;
+        for (OpcionRespuestaDTO opcionDTO : dto.getOpciones()) {
+            if (opcionDTO.getPonderacion() == null) {
+                throw new ReglaNegocioException("La ponderación es obligatoria para todas las opciones");
+            }
+            if (opcionDTO.getPonderacion() < 0.0) {
+                throw new ReglaNegocioException("La ponderación debe ser mayor o igual a cero");
+            }
+            sumaPonderaciones += opcionDTO.getPonderacion();
+        }
+
+        if (Math.abs(sumaPonderaciones - 10.0) > 0.001) {
+            throw new ReglaNegocioException("La suma de las ponderaciones de las opciones de respuesta debe ser exactamente 10 puntos (suma actual: " + sumaPonderaciones + ")");
+        }
+
+        // 5. Construcción de entidad Pregunta y Opciones
         Pregunta pregunta = new Pregunta();
         pregunta.setNombre(nombre);
         pregunta.setEnunciado(enunciado);
@@ -129,19 +162,21 @@ public class GestorPregunta {
 
         int orden = 1;
         for (OpcionRespuestaDTO opcionDTO : dto.getOpciones()) {
-            if (opcionDTO.getNombre() == null || opcionDTO.getNombre().isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de cada opción de respuesta es obligatorio");
-            }
-            if (opcionDTO.getPonderacion() == null || opcionDTO.getPonderacion() < 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La ponderación de cada opción debe ser mayor o igual a 0");
+            String optNombre = opcionDTO.getNombre() != null ? opcionDTO.getNombre().trim() : "";
+            String optDescripcion = (opcionDTO.getDescripcion() != null && !opcionDTO.getDescripcion().isBlank())
+                    ? opcionDTO.getDescripcion().trim()
+                    : null;
+
+            if (optNombre.isBlank()) {
+                throw new ReglaNegocioException("El nombre de la opción es obligatorio");
             }
 
             Integer nroOrden = opcionDTO.getNroOrden() != null ? opcionDTO.getNroOrden() : orden;
             OpcionRespuesta opcion = new OpcionRespuesta(
                     null,
                     pregunta,
-                    opcionDTO.getNombre().trim(),
-                    opcionDTO.getDescripcion() != null ? opcionDTO.getDescripcion().trim() : null,
+                    optNombre,
+                    optDescripcion,
                     nroOrden,
                     opcionDTO.getPonderacion()
             );
@@ -158,8 +193,8 @@ public class GestorPregunta {
     /**
      * Modifica los datos de una pregunta existente (CU 022 - Flujo 5.A).
      *
-     * @param id identificador de la pregunta
-     * @param dto datos a actualizar
+     * @param id identificador de la pregunta a modificar
+     * @param dto nuevos datos
      * @return DTO de la pregunta actualizada
      */
     @Transactional
@@ -171,7 +206,9 @@ public class GestorPregunta {
 
         String nombre = dto.getNombre() != null ? dto.getNombre().trim() : "";
         String enunciado = dto.getEnunciado() != null ? dto.getEnunciado().trim() : "";
-        String descripcion = dto.getDescripcion() != null ? dto.getDescripcion().trim() : null;
+        String descripcion = (dto.getDescripcion() != null && !dto.getDescripcion().isBlank())
+                ? dto.getDescripcion().trim()
+                : null;
 
         if (nombre.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de la pregunta es obligatorio");
@@ -249,18 +286,38 @@ public class GestorPregunta {
         log.info("Pregunta ID {} dada de baja exitosamente", id);
     }
 
+    /**
+     * Carga dinámicamente los factores correspondientes a una competencia seleccionada (CU 021).
+     *
+     * @param codigoCompetencia código de la competencia
+     * @return lista de factores activos ordenados por número de orden ascendente
+     * @throws RecursoNoEncontradoException si la competencia indicada no existe
+     */
+    @Transactional(readOnly = true)
+    public List<FactorDTO> listarFactoresPorCompetencia(String codigoCompetencia) {
+        String codigo = codigoCompetencia != null ? codigoCompetencia.trim().toUpperCase(Locale.ROOT) : "";
+        if (competenciaDAO != null && !competenciaDAO.existsByCodigo(codigo)) {
+            throw new RecursoNoEncontradoException("Competencia con código '" + codigo + "' no encontrada");
+        }
+
+        return factorDAO.findByCompetenciaCodigoOrderByNroOrdenAsc(codigo).stream()
+                .filter(f -> !Boolean.TRUE.equals(f.getEliminado()))
+                .map(this::aFactorDTO)
+                .toList();
+    }
+
     private Factor resolverFactor(PreguntaDTO dto) {
         if (dto.getFactorCodigo() != null && !dto.getFactorCodigo().isBlank()) {
             String fCod = dto.getFactorCodigo().trim();
             return factorDAO.findByCodigo(fCod.toUpperCase(Locale.ROOT))
                     .or(() -> factorDAO.findByCodigo(fCod))
-                    .orElseThrow(() -> new RecursoNoEncontradoException("Factor con código '" + fCod + "' no existe"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Factor con código '" + fCod + "' no encontrado"));
         }
         if (dto.getFactorId() != null) {
             return factorDAO.findById(dto.getFactorId())
                     .orElseThrow(() -> new RecursoNoEncontradoException("Factor", dto.getFactorId()));
         }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El código del factor no puede estar vacío");
+        throw new ReglaNegocioException("El código de factor es obligatorio");
     }
 
     public PreguntaDTO aDTO(Pregunta p) {
@@ -268,6 +325,7 @@ public class GestorPregunta {
         String factorCodigo = null;
         Long factorId = null;
         String competenciaNombre = null;
+        String competenciaCodigo = null;
 
         if (p.getFactor() != null) {
             factorNombre = p.getFactor().getNombre();
@@ -275,11 +333,13 @@ public class GestorPregunta {
             factorId = p.getFactor().getId();
             if (p.getFactor().getCompetencia() != null) {
                 competenciaNombre = p.getFactor().getCompetencia().getNombre();
+                competenciaCodigo = p.getFactor().getCompetencia().getCodigo();
             }
         }
 
         List<OpcionRespuestaDTO> opcionesDTO = p.getOpciones() != null
                 ? p.getOpciones().stream()
+                .sorted(Comparator.comparing(OpcionRespuesta::getNroOrden))
                 .map(o -> new OpcionRespuestaDTO(o.getId(), o.getNombre(), o.getDescripcion(), o.getNroOrden(), o.getPonderacion()))
                 .toList()
                 : List.of();
@@ -295,7 +355,20 @@ public class GestorPregunta {
                 opcionesDTO
         );
         dto.setFactorId(factorId);
+        dto.setCodigoCompetencia(competenciaCodigo);
         return dto;
     }
-}
 
+    private FactorDTO aFactorDTO(Factor entidad) {
+        return new FactorDTO(
+                entidad.getId(),
+                entidad.getCodigo(),
+                entidad.getNombre(),
+                entidad.getDescripcion(),
+                entidad.getCompetencia() != null ? entidad.getCompetencia().getId() : null,
+                entidad.getCompetencia() != null ? entidad.getCompetencia().getNombre() : null,
+                entidad.getCompetencia() != null ? entidad.getCompetencia().getCodigo() : null,
+                entidad.getNroOrden()
+        );
+    }
+}

@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entidad JPA que representa una Pregunta evaluable en el sistema (CU 020).
+ * Entidad JPA que representa una Pregunta evaluable en el sistema (CU 020 / CU 021).
  */
 @Entity
 @Table(name = "pregunta")
@@ -75,6 +75,23 @@ public class Pregunta extends EntidadAuditable {
         }
     }
 
+    // Aliases para compatibilidad con CU 021
+    public void addOpcionRespuesta(OpcionRespuesta opcion) {
+        addOpcion(opcion);
+    }
+
+    public void removeOpcionRespuesta(OpcionRespuesta opcion) {
+        removeOpcion(opcion);
+    }
+
+    public List<OpcionRespuesta> getOpcionesRespuesta() {
+        return getOpciones();
+    }
+
+    public void setOpcionesRespuesta(List<OpcionRespuesta> opcionesRespuesta) {
+        setOpciones(opcionesRespuesta);
+    }
+
     public Long getId() {
         return id;
     }
@@ -123,4 +140,3 @@ public class Pregunta extends EntidadAuditable {
         this.opciones = opciones != null ? opciones : new ArrayList<>();
     }
 }
-

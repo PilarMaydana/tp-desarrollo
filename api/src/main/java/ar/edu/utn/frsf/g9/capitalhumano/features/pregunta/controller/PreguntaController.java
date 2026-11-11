@@ -27,11 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Controlador REST para la gestión de Preguntas (CU 020 - Gestionar Preguntas).
+ * Controlador REST para la gestión de Preguntas (CU 020 / CU 021).
  */
 @RestController
 @RequestMapping("/api/preguntas")
-@Tag(name = "Preguntas", description = "Endpoints para la gestión, búsqueda, alta, modificación y baja de Preguntas (CU 020)")
+@Tag(name = "Preguntas", description = "Endpoints para la gestión, búsqueda, alta, modificación y baja de Preguntas (CU 020 / CU 021)")
 public class PreguntaController {
 
     private final GestorPregunta gestorPregunta;
@@ -91,15 +91,17 @@ public class PreguntaController {
      * @return pregunta creada con HTTP 201 Created
      */
     @PostMapping
-    @Operation(summary = "Alta de pregunta", description = "Crea una nueva pregunta asociada a un factor existente con sus opciones de respuesta.")
+    @Operation(summary = "Dar de alta una nueva pregunta", description = "Registra una nueva pregunta en el banco asociada a un factor con sus opciones de respuesta ponderadas.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Pregunta creada exitosamente",
                     content = @Content(schema = @Schema(implementation = PreguntaDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Datos obligatorios incompletos o menos de 2 opciones",
+            @ApiResponse(responseCode = "400", description = "Datos de entrada incompletos o inválidos (omisiones o longitud excedida)",
                     content = @Content(schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "404", description = "Factor referenciado no existe",
+            @ApiResponse(responseCode = "404", description = "Factor referenciado no encontrado",
                     content = @Content(schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "409", description = "Pregunta duplicada en nombre o enunciado",
+            @ApiResponse(responseCode = "409", description = "Pregunta duplicada en nombre o enunciado para el factor",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "422", description = "Regla de negocio violada (ej. suma de ponderaciones distinta de 10 o valores negativos)",
                     content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     public ResponseEntity<PreguntaDTO> crearPregunta(@Valid @RequestBody PreguntaDTO dto) {
@@ -151,4 +153,3 @@ public class PreguntaController {
         return ResponseEntity.noContent().build();
     }
 }
-

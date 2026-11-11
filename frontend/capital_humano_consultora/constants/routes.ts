@@ -11,6 +11,7 @@ export const ROUTES = {
     EVALUACIONES: '/en-desarrollo?modulo=Evaluación+de+Candidatos',
     REPORTES: '/en-desarrollo?modulo=Reportes',
     PREGUNTAS: '/preguntas',
+    PREGUNTAS_NUEVO: '/preguntas/nuevo',
     ORDEN_MERITOS: '/en-desarrollo?modulo=Orden+de+Méritos',
     PUESTOS: '/puestos/nuevo',
     PUESTOS_NUEVO: '/puestos/nuevo',

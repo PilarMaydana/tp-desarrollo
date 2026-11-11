@@ -28,8 +28,10 @@ public class Competencia extends EntidadAuditable {
     @Column(name = "descripcion", length = 500, nullable = false)
     private String descripcion;
 
+    @Column(name = "tipo", length = 50)
+    private String tipo;
+
     public Competencia() {
-        this.setEliminado(false);
     }
 
     public Competencia(Long id, String codigo, String nombre, String descripcion) {
@@ -37,7 +39,14 @@ public class Competencia extends EntidadAuditable {
         this.codigo = codigo;
         this.nombre = nombre;
         this.descripcion = descripcion;
-        this.setEliminado(false);
+    }
+
+    public Competencia(Long id, String codigo, String nombre, String descripcion, String tipo) {
+        this.id = id;
+        this.codigo = codigo;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.tipo = tipo;
     }
 
     public Long getId() {
@@ -70,5 +79,13 @@ public class Competencia extends EntidadAuditable {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 }

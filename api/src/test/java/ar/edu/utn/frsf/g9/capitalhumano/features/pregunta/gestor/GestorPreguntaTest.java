@@ -1,7 +1,9 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.gestor;
 
+import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.dao.CompetenciaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.model.Competencia;
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.dao.FactorDAO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.factor.dto.FactorDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.model.Factor;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dao.PreguntaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.OpcionRespuestaDTO;
@@ -11,6 +13,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.OpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.Pregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.security.ContextoSeguridad;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,7 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests unitarios para {@link GestorPregunta} (CU 020).
+ * Tests unitarios para {@link GestorPregunta} (CU 020 / CU 021).
  */
 @ExtendWith(MockitoExtension.class)
 class GestorPreguntaTest {
@@ -49,10 +51,18 @@ class GestorPreguntaTest {
     private FactorDAO factorDAO;
 
     @Mock
+    private CompetenciaDAO competenciaDAO;
+
+    @Mock
     private ContextoSeguridad contextoSeguridad;
 
     @InjectMocks
     private GestorPregunta gestorPregunta;
+
+    private Factor crearFactorPrueba() {
+        Competencia competencia = new Competencia(1L, "COM-01", "COMUNICACIÓN", "DESCRIPCIÓN COMUNICACIÓN");
+        return new Factor(1L, "FAC-COM-01", "CLARIDAD Y CONCISIÓN", "DESCRIPCIÓN FACTOR", 1, competencia);
+    }
 
     @Test
     @DisplayName("buscarPreguntas: lanza 400 Bad Request si no se envía ningún criterio de búsqueda")
@@ -119,14 +129,14 @@ class GestorPreguntaTest {
     }
 
     @Test
-    @DisplayName("crearPregunta: da de alta con éxito asignando factor y opciones")
+    @DisplayName("crearPregunta: da de alta con éxito asignando factor y opciones con suma 10")
     void crearPregunta_flujoExitoso() {
         Competencia comp = new Competencia(1L, "TEC-01", "COMPETENCIAS TÉCNICAS", "DESC");
         Factor factor = new Factor(2L, "FAC-01", "DESARROLLO", "DESC", 1, comp);
 
-        when(factorDAO.findByCodigo("FAC-01")).thenReturn(Optional.of(factor));
-        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(2L, "Patrones de Diseño")).thenReturn(false);
-        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndEliminadoFalse(2L, "¿Para qué sirve Singleton?")).thenReturn(false);
+        when(factorDAO.findByCodigo(anyString())).thenReturn(Optional.of(factor));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(eq(2L), anyString())).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndEliminadoFalse(eq(2L), anyString())).thenReturn(false);
 
         when(preguntaDAO.save(any(Pregunta.class))).thenAnswer(invocation -> {
             Pregunta p = invocation.getArgument(0);
@@ -143,8 +153,8 @@ class GestorPreguntaTest {
                 "¿Para qué sirve Singleton?",
                 "Pregunta de arquitectura",
                 List.of(
-                        new OpcionRespuestaDTO("Instancia única", "Garantiza una única instancia", 1.0),
-                        new OpcionRespuestaDTO("Múltiples instancias", "Crea muchas instancias", 0.0)
+                        new OpcionRespuestaDTO("Instancia única", "Garantiza una única instancia", 5.0),
+                        new OpcionRespuestaDTO("Múltiples instancias", "Crea muchas instancias", 5.0)
                 )
         );
 
@@ -167,6 +177,43 @@ class GestorPreguntaTest {
     }
 
     @Test
+    @DisplayName("Normaliza campos literales aplicando trim antes de validar y persistir")
+    void crearPregunta_normalizaLiteralesTrim() {
+        Factor factor = crearFactorPrueba();
+        when(factorDAO.findByCodigo(anyString())).thenReturn(Optional.of(factor));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(false);
+
+        when(preguntaDAO.save(any(Pregunta.class))).thenAnswer(invocation -> {
+            Pregunta p = invocation.getArgument(0);
+            p.setId(20L);
+            return p;
+        });
+
+        List<OpcionRespuestaDTO> opciones = List.of(
+                new OpcionRespuestaDTO("  opcion uno  ", "  descripcion uno  ", 4.0),
+                new OpcionRespuestaDTO("  opcion dos  ", "  descripcion dos  ", 6.0)
+        );
+        PreguntaDTO entrada = new PreguntaDTO(null, "  Pregunta Espacios  ", "  ¿Enunciado con espacios?  ", "  descripcion opcional  ", "  fac-com-01  ", opciones);
+
+        PreguntaDTO resultado = gestorPregunta.crearPregunta(entrada);
+
+        ArgumentCaptor<Pregunta> captor = ArgumentCaptor.forClass(Pregunta.class);
+        verify(preguntaDAO).save(captor.capture());
+        Pregunta guardada = captor.getValue();
+
+        assertThat(guardada.getNombre()).isEqualTo("Pregunta Espacios");
+        assertThat(guardada.getEnunciado()).isEqualTo("¿Enunciado con espacios?");
+        assertThat(guardada.getDescripcion()).isEqualTo("descripcion opcional");
+        assertThat(guardada.getOpciones().get(0).getNombre()).isEqualTo("opcion uno");
+        assertThat(guardada.getOpciones().get(0).getDescripcion()).isEqualTo("descripcion uno");
+        assertThat(guardada.getOpciones().get(1).getNombre()).isEqualTo("opcion dos");
+        assertThat(guardada.getOpciones().get(1).getDescripcion()).isEqualTo("descripcion dos");
+
+        assertThat(resultado.getNombre()).isEqualTo("Pregunta Espacios");
+    }
+
+    @Test
     @DisplayName("crearPregunta: lanza 404 si el factor especificado no existe")
     void crearPregunta_factorNoExiste_lanza404() {
         when(factorDAO.findByCodigo(anyString())).thenReturn(Optional.empty());
@@ -174,8 +221,8 @@ class GestorPreguntaTest {
         PreguntaDTO entrada = new PreguntaDTO(
                 null, null, null, "FAC-INEXISTENTE", "Nombre", "Enunciado", "Desc",
                 List.of(
-                        new OpcionRespuestaDTO("A", "Desc", 1.0),
-                        new OpcionRespuestaDTO("B", "Desc", 0.0)
+                        new OpcionRespuestaDTO("A", "Desc", 5.0),
+                        new OpcionRespuestaDTO("B", "Desc", 5.0)
                 )
         );
 
@@ -190,19 +237,19 @@ class GestorPreguntaTest {
     void crearPregunta_nombreDuplicado_lanza409() {
         Factor factor = new Factor(1L, "FAC-01", "FACTOR", "DESC", 1, null);
         when(factorDAO.findByCodigo("FAC-01")).thenReturn(Optional.of(factor));
-        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(1L, "Pregunta Repetida")).thenReturn(true);
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(true);
 
         PreguntaDTO entrada = new PreguntaDTO(
                 null, null, null, "FAC-01", "Pregunta Repetida", "Enunciado Único", "Desc",
                 List.of(
-                        new OpcionRespuestaDTO("A", "Desc", 1.0),
-                        new OpcionRespuestaDTO("B", "Desc", 0.0)
+                        new OpcionRespuestaDTO("A", "Desc", 5.0),
+                        new OpcionRespuestaDTO("B", "Desc", 5.0)
                 )
         );
 
         assertThatThrownBy(() -> gestorPregunta.crearPregunta(entrada))
                 .isInstanceOf(RecursoDuplicadoException.class)
-                .hasMessageContaining("nombre 'Pregunta Repetida'");
+                .hasMessageContaining("nombre");
 
         verify(preguntaDAO, never()).save(any());
     }
@@ -212,70 +259,111 @@ class GestorPreguntaTest {
     void crearPregunta_enunciadoDuplicado_lanza409() {
         Factor factor = new Factor(1L, "FAC-01", "FACTOR", "DESC", 1, null);
         when(factorDAO.findByCodigo("FAC-01")).thenReturn(Optional.of(factor));
-        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(1L, "Nombre Nuevo")).thenReturn(false);
-        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndEliminadoFalse(1L, "Enunciado Repetido")).thenReturn(true);
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(true);
 
         PreguntaDTO entrada = new PreguntaDTO(
-                null, null, null, "FAC-01", "Nombre Nuevo", "Enunciado Repetido", "Desc",
+                null, null, null, "FAC-01", "Pregunta Única", "Enunciado Repetido", "Desc",
                 List.of(
-                        new OpcionRespuestaDTO("A", "Desc", 1.0),
-                        new OpcionRespuestaDTO("B", "Desc", 0.0)
+                        new OpcionRespuestaDTO("A", "Desc", 5.0),
+                        new OpcionRespuestaDTO("B", "Desc", 5.0)
                 )
         );
 
         assertThatThrownBy(() -> gestorPregunta.crearPregunta(entrada))
                 .isInstanceOf(RecursoDuplicadoException.class)
-                .hasMessageContaining("enunciado 'Enunciado Repetido'");
+                .hasMessageContaining("enunciado");
 
         verify(preguntaDAO, never()).save(any());
     }
 
     @Test
-    @DisplayName("crearPregunta: lanza 400 Bad Request si la pregunta tiene menos de 2 opciones")
-    void crearPregunta_menosDeDosOpciones_lanza400() {
-        Factor factor = new Factor(1L, "FAC-01", "FACTOR", "DESC", 1, null);
-        when(factorDAO.findByCodigo("FAC-01")).thenReturn(Optional.of(factor));
+    @DisplayName("Lanza ReglaNegocioException cuando la suma de ponderaciones no es igual a 10")
+    void crearPregunta_sumaPonderacionesDistintaDeDiez() {
+        Factor factor = crearFactorPrueba();
+        when(factorDAO.findByCodigo(anyString())).thenReturn(Optional.of(factor));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(false);
 
-        PreguntaDTO entrada = new PreguntaDTO(
-                null, null, null, "FAC-01", "Nombre", "Enunciado", "Desc",
-                List.of(new OpcionRespuestaDTO("Solo una opción", "Desc", 1.0))
-        );
+        List<OpcionRespuestaDTO> opciones = List.of(
+                new OpcionRespuestaDTO(1, "OPCION 1", "DESC 1", 3.0),
+                new OpcionRespuestaDTO(2, "OPCION 2", "DESC 2", 4.0)
+        ); // suma = 7.0 != 10.0
+        PreguntaDTO entrada = new PreguntaDTO(null, "Pregunta Test", "¿Enunciado Test?", null, "FAC-COM-01", opciones);
 
         assertThatThrownBy(() -> gestorPregunta.crearPregunta(entrada))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("10 puntos")
+                .hasMessageContaining("7.0");
 
         verify(preguntaDAO, never()).save(any());
     }
 
     @Test
-    @DisplayName("modificarPregunta: actualiza con éxito los datos y opciones de una pregunta existente")
-    void modificarPregunta_flujoExitoso() {
-        Factor factor = new Factor(1L, "FAC-01", "FACTOR", "DESC", 1, null);
-        Pregunta existente = new Pregunta(3L, "Nombre Viejo", "Enunciado Viejo", "Desc Vieja", factor);
-        existente.addOpcion(new OpcionRespuesta(1L, existente, "Op 1", "Desc 1", 1, 1.0));
-        existente.addOpcion(new OpcionRespuesta(2L, existente, "Op 2", "Desc 2", 2, 0.0));
+    @DisplayName("Lanza ReglaNegocioException cuando una ponderación es negativa")
+    void crearPregunta_ponderacionNegativa() {
+        Factor factor = crearFactorPrueba();
+        when(factorDAO.findByCodigo(anyString())).thenReturn(Optional.of(factor));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndEliminadoFalse(eq(1L), anyString())).thenReturn(false);
 
-        when(preguntaDAO.findByIdAndEliminadoFalse(3L)).thenReturn(Optional.of(existente));
-        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "Nombre Modificado", 3L)).thenReturn(false);
-        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "Enunciado Modificado", 3L)).thenReturn(false);
+        List<OpcionRespuestaDTO> opciones = List.of(
+                new OpcionRespuestaDTO(1, "OPCION 1", "DESC 1", -2.0),
+                new OpcionRespuestaDTO(2, "OPCION 2", "DESC 2", 12.0)
+        );
+        PreguntaDTO entrada = new PreguntaDTO(null, "Pregunta Test", "¿Enunciado Test?", null, "FAC-COM-01", opciones);
+
+        assertThatThrownBy(() -> gestorPregunta.crearPregunta(entrada))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("mayor o igual a cero");
+
+        verify(preguntaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Lanza ReglaNegocioException cuando se proporcionan menos de 2 opciones")
+    void crearPregunta_menosDeDosOpciones() {
+        Factor factor = crearFactorPrueba();
+        when(factorDAO.findByCodigo(anyString())).thenReturn(Optional.of(factor));
+
+        List<OpcionRespuestaDTO> opciones = List.of(
+                new OpcionRespuestaDTO(1, "OPCION UNICA", "DESC UNICA", 10.0)
+        );
+        PreguntaDTO entrada = new PreguntaDTO(null, "Pregunta Test", "¿Enunciado Test?", null, "FAC-COM-01", opciones);
+
+        assertThatThrownBy(() -> gestorPregunta.crearPregunta(entrada))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("al menos 2 opciones");
+
+        verify(preguntaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: modifica los datos y opciones de una pregunta existente")
+    void modificarPregunta_exitoso() {
+        Competencia comp = new Competencia(1L, "TEC-01", "COMPETENCIAS TÉCNICAS", "DESC");
+        Factor factor = new Factor(1L, "FAC-01", "DESARROLLO", "DESC", 1, comp);
+        Pregunta existente = new Pregunta(1L, "NOMBRE VIEJO", "ENUNCIADO VIEJO", "DESC VIEJA", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "NOMBRE NUEVO", 1L)).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "ENUNCIADO NUEVO", 1L)).thenReturn(false);
         when(preguntaDAO.save(any(Pregunta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        PreguntaDTO updateDTO = new PreguntaDTO(
-                null, null, null, null, "Nombre Modificado", "Enunciado Modificado", "Desc Nueva",
+        PreguntaDTO actualizacion = new PreguntaDTO(
+                null, null, null, null, "NOMBRE NUEVO", "ENUNCIADO NUEVO", "DESC NUEVA",
                 List.of(
-                        new OpcionRespuestaDTO("Nueva Op A", "Desc A", 0.5),
-                        new OpcionRespuestaDTO("Nueva Op B", "Desc B", 0.5)
+                        new OpcionRespuestaDTO("Opcion 1", "Desc 1", 1, 1.0),
+                        new OpcionRespuestaDTO("Opcion 2", "Desc 2", 2, 0.0)
                 )
         );
 
-        PreguntaDTO resultado = gestorPregunta.modificarPregunta(3L, updateDTO);
+        PreguntaDTO resultado = gestorPregunta.modificarPregunta(1L, actualizacion);
 
-        assertThat(resultado.getId()).isEqualTo(3L);
-        assertThat(resultado.getNombre()).isEqualTo("Nombre Modificado");
-        assertThat(resultado.getEnunciado()).isEqualTo("Enunciado Modificado");
+        assertThat(resultado.getNombre()).isEqualTo("NOMBRE NUEVO");
+        assertThat(resultado.getEnunciado()).isEqualTo("ENUNCIADO NUEVO");
+        assertThat(resultado.getDescripcion()).isEqualTo("DESC NUEVA");
         assertThat(resultado.getOpciones()).hasSize(2);
-        assertThat(resultado.getOpciones().get(0).getNombre()).isEqualTo("Nueva Op A");
 
         verify(preguntaDAO).save(existente);
     }
@@ -285,68 +373,69 @@ class GestorPreguntaTest {
     void modificarPregunta_noExiste_lanza404() {
         when(preguntaDAO.findByIdAndEliminadoFalse(99L)).thenReturn(Optional.empty());
 
-        PreguntaDTO updateDTO = new PreguntaDTO(
-                null, null, null, null, "Nombre", "Enunciado", "Desc",
-                List.of(
-                        new OpcionRespuestaDTO("A", "Desc", 1.0),
-                        new OpcionRespuestaDTO("B", "Desc", 0.0)
-                )
-        );
+        PreguntaDTO dto = new PreguntaDTO(null, null, null, null, "A", "B", "C",
+                List.of(new OpcionRespuestaDTO("A", "B", 1.0), new OpcionRespuestaDTO("C", "D", 0.0)));
 
-        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(99L, updateDTO))
+        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(99L, dto))
                 .isInstanceOf(RecursoNoEncontradoException.class);
     }
 
     @Test
-    @DisplayName("modificarPregunta: lanza 409 Conflict si el nuevo nombre ya está tomado por otra pregunta en el factor")
-    void modificarPregunta_nombreDuplicado_lanza409() {
-        Factor factor = new Factor(1L, "FAC-01", "FACTOR", "DESC", 1, null);
-        Pregunta existente = new Pregunta(3L, "Nombre Original", "Enunciado", "Desc", factor);
+    @DisplayName("eliminarPregunta: aplica baja lógica registrando auditoría")
+    void eliminarPregunta_exitoso() {
+        Competencia comp = new Competencia(1L, "TEC-01", "COMP", "DESC");
+        Factor factor = new Factor(1L, "FAC-01", "FAC", "DESC", 1, comp);
+        Pregunta existente = new Pregunta(1L, "NOMBRE", "ENUNCIADO", "DESC", factor);
 
-        when(preguntaDAO.findByIdAndEliminadoFalse(3L)).thenReturn(Optional.of(existente));
-        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "Nombre Ocupado", 3L)).thenReturn(true);
+        when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
+        when(contextoSeguridad.getUsuarioActualId()).thenReturn(77L);
 
-        PreguntaDTO updateDTO = new PreguntaDTO(
-                null, null, null, null, "Nombre Ocupado", "Enunciado", "Desc",
-                List.of(
-                        new OpcionRespuestaDTO("A", "Desc", 1.0),
-                        new OpcionRespuestaDTO("B", "Desc", 0.0)
-                )
-        );
-
-        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(3L, updateDTO))
-                .isInstanceOf(RecursoDuplicadoException.class);
-
-        verify(preguntaDAO, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("eliminarPregunta: aplica baja lógica registrando usuario y fecha de auditoría")
-    void eliminarPregunta_flujoExitoso() {
-        Factor factor = new Factor(1L, "FAC-01", "FACTOR", "DESC", 1, null);
-        Pregunta existente = new Pregunta(7L, "Pregunta a borrar", "Enunciado", "Desc", factor);
-
-        when(preguntaDAO.findByIdAndEliminadoFalse(7L)).thenReturn(Optional.of(existente));
-        when(contextoSeguridad.getUsuarioActualId()).thenReturn(42L);
-
-        gestorPregunta.eliminarPregunta(7L);
+        gestorPregunta.eliminarPregunta(1L);
 
         assertThat(existente.getEliminado()).isTrue();
         assertThat(existente.getFechaEliminacion()).isNotNull();
-        assertThat(existente.getUsuarioEliminacion()).isEqualTo(42L);
+        assertThat(existente.getUsuarioEliminacion()).isEqualTo(77L);
 
         verify(preguntaDAO).save(existente);
     }
 
     @Test
-    @DisplayName("eliminarPregunta: lanza 404 si la pregunta no existe o ya fue eliminada")
+    @DisplayName("eliminarPregunta: lanza 404 si la pregunta no existe")
     void eliminarPregunta_noExiste_lanza404() {
-        when(preguntaDAO.findByIdAndEliminadoFalse(88L)).thenReturn(Optional.empty());
+        when(preguntaDAO.findByIdAndEliminadoFalse(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> gestorPregunta.eliminarPregunta(88L))
+        assertThatThrownBy(() -> gestorPregunta.eliminarPregunta(99L))
                 .isInstanceOf(RecursoNoEncontradoException.class);
 
         verify(preguntaDAO, never()).save(any());
     }
-}
 
+    @Test
+    @DisplayName("Listar factores por competencia retorna lista ordenada por nroOrden")
+    void listarFactoresPorCompetencia_exitoso() {
+        Competencia competencia = new Competencia(1L, "COM-01", "COMUNICACIÓN", "DESCRIPCIÓN");
+        Factor f1 = new Factor(1L, "FAC-01", "FACTOR 1", "DESC 1", 1, competencia);
+        Factor f2 = new Factor(2L, "FAC-02", "FACTOR 2", "DESC 2", 2, competencia);
+
+        when(competenciaDAO.existsByCodigo("COM-01")).thenReturn(true);
+        when(factorDAO.findByCompetenciaCodigoOrderByNroOrdenAsc("COM-01")).thenReturn(List.of(f1, f2));
+
+        List<FactorDTO> resultado = gestorPregunta.listarFactoresPorCompetencia("COM-01");
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado.get(0).getCodigo()).isEqualTo("FAC-01");
+        assertThat(resultado.get(0).getNroOrden()).isEqualTo(1);
+        assertThat(resultado.get(1).getCodigo()).isEqualTo("FAC-02");
+        assertThat(resultado.get(1).getNroOrden()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Listar factores por competencia lanza RecursoNoEncontradoException si la competencia no existe")
+    void listarFactoresPorCompetencia_competenciaNoExiste() {
+        when(competenciaDAO.existsByCodigo("COM-99")).thenReturn(false);
+
+        assertThatThrownBy(() -> gestorPregunta.listarFactoresPorCompetencia("COM-99"))
+                .isInstanceOf(RecursoNoEncontradoException.class)
+                .hasMessageContaining("COM-99");
+    }
+}

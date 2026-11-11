@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * DTO para la transferencia de datos en el alta y representación de Factores (CU 017).
+ * DTO para la transferencia de datos en el alta y representación de Factores (CU 017 / CU 021).
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FactorDTO {
@@ -32,6 +32,8 @@ public class FactorDTO {
     private Long competenciaId;
 
     private String competenciaNombre;
+
+    private String codigoCompetencia;
 
     @NotNull(message = "El número de orden es obligatorio")
     @Min(value = 1, message = "El número de orden debe ser mayor a 0")
@@ -57,6 +59,17 @@ public class FactorDTO {
         this.descripcion = descripcion;
         this.competenciaId = competenciaId;
         this.competenciaNombre = competenciaNombre;
+        this.nroOrden = nroOrden;
+    }
+
+    public FactorDTO(Long id, String codigo, String nombre, String descripcion, Long competenciaId, String competenciaNombre, String codigoCompetencia, Integer nroOrden) {
+        this.id = id;
+        this.codigo = codigo;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.competenciaId = competenciaId;
+        this.competenciaNombre = competenciaNombre;
+        this.codigoCompetencia = codigoCompetencia;
         this.nroOrden = nroOrden;
     }
 
@@ -108,6 +121,14 @@ public class FactorDTO {
         this.competenciaNombre = competenciaNombre;
     }
 
+    public String getCodigoCompetencia() {
+        return codigoCompetencia;
+    }
+
+    public void setCodigoCompetencia(String codigoCompetencia) {
+        this.codigoCompetencia = codigoCompetencia;
+    }
+
     public Integer getNroOrden() {
         return nroOrden;
     }
@@ -116,4 +137,3 @@ public class FactorDTO {
         this.nroOrden = nroOrden;
     }
 }
-
