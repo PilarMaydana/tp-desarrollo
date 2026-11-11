@@ -100,3 +100,4 @@ public class OpcionRespuesta extends EntidadAuditable {
         this.ponderacion = ponderacion;
     }
 }
+

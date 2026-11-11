@@ -114,3 +114,4 @@ public class PreguntaDTO {
         this.opcionesRespuesta = opcionesRespuesta != null ? opcionesRespuesta : new ArrayList<>();
     }
 }
+

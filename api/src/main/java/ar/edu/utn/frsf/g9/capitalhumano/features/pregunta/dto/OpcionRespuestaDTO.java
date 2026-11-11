@@ -84,3 +84,4 @@ public class OpcionRespuestaDTO {
         this.ponderacion = ponderacion;
     }
 }
+

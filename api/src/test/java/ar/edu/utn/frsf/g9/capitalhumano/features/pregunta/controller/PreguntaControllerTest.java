@@ -196,3 +196,4 @@ class PreguntaControllerTest {
                 .andExpect(jsonPath("$.mensaje").value("La suma de las ponderaciones de las opciones de respuesta debe ser exactamente 10 puntos (suma actual: 8.0)"));
     }
 }
+
