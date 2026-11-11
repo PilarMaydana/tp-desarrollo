@@ -5,6 +5,11 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.gestor.GestorCompet
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.dto.FactorDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.gestor.GestorPregunta;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,14 +59,24 @@ public class CompetenciaController {
     }
 
     /**
-     * Obtiene la lista completa de competencias disponibles.
+     * Obtiene la lista completa de competencias disponibles ordenadas por nombre ascendente.
      *
-     * @return lista de competencias con HTTP 200
+     * @return lista de competencias con HTTP 200 (vacía si no hay datos)
      */
     @GetMapping
-    @Operation(summary = "Listar competencias", description = "Retorna el listado de competencias activas para selectores.")
+    @Operation(
+            summary = "Listar competencias",
+            description = "Retorna el listado de competencias registradas ordenadas por nombre ascendente (vacía si no hay datos)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Listado de competencias obtenido exitosamente",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = CompetenciaDTO.class)))
+            )
+    })
     public ResponseEntity<List<CompetenciaDTO>> listarCompetencias() {
-        return ResponseEntity.ok(gestorCompetencia.listarCompetencias());
+        return ResponseEntity.ok(gestorCompetencia.listar());
     }
 
     /**
