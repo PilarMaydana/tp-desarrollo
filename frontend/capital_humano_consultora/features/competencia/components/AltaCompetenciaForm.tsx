@@ -32,7 +32,7 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
     reset,
     setFocus,
     setError,
-    formState: { errors, isSubmitted, isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm<CompetenciaFormData>({
     resolver: zodResolver(CompetenciaSchema),
     defaultValues: {
@@ -63,11 +63,18 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
       setCreatedCompetenciaNombre(response.nombre || data.nombre.trim().toUpperCase());
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        const errorData = err.data as { mensaje?: string; detalles?: { campo: string; mensaje: string }[] } | undefined;
+        const errorData = err.data as {
+          mensaje?: string;
+          detalles?: { campo: string; mensaje: string }[];
+        } | undefined;
+
         if (err.status === 409) {
-          setServerError(errorData?.mensaje || err.message || 'Ya existe una competencia con ese código o nombre');
+          setServerError(
+            errorData?.mensaje || err.message || 'Ya existe una competencia con ese código o nombre'
+          );
           return;
         }
+
         if (err.status === 400 && errorData?.detalles && errorData.detalles.length > 0) {
           errorData.detalles.forEach((d) => {
             const fieldKey = d.campo as keyof CompetenciaFormData;
@@ -77,9 +84,12 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
           });
           return;
         }
+
         setServerError(errorData?.mensaje || err.message || 'Error al comunicarse con el servidor');
+      } else if (err instanceof Error) {
+        setServerError(err.message || 'Error al comunicarse con el servidor');
       } else {
-        setCreatedCompetenciaNombre(data.nombre.trim().toUpperCase());
+        setServerError('Error al comunicarse con el servidor');
       }
     }
   };
@@ -142,7 +152,7 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
           </p>
         </div>
 
-        {/* Error de servidor (ej: 409 Conflicto) */}
+        {/* Flujo Alternativo 2.B: Error de servidor (ej: 409 Conflicto por código o nombre existente) */}
         {serverError && (
           <div
             role="alert"
@@ -152,8 +162,8 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
           </div>
         )}
 
-        {/* Flujo Alternativo 2.A: Banner con todas las omisiones juntas */}
-        {isSubmitted && errorMessages.length > 0 && (
+        {/* Flujo Alternativo 2.A: Banner con todas las omisiones juntas (Zod o 400 detalles[]) */}
+        {errorMessages.length > 0 && (
           <div
             role="alert"
             className="w-full p-4 bg-red-50 border border-red-200 rounded-xl text-sm font-medium text-[#D32F2F] flex flex-col gap-1"
@@ -254,7 +264,7 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
         </form>
       </div>
 
-      {/* Modal de Confirmación */}
+      {/* Modal de Confirmación de Éxito */}
       {createdCompetenciaNombre !== null && (
         <div
           className="fixed inset-0 bg-black/40 z-50 backdrop-blur-xs flex items-center justify-center p-4"
