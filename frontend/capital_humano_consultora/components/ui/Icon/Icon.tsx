@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Filter,
   X,
+  Sparkles,
   LucideProps,
 } from 'lucide-react';
 
@@ -55,7 +56,9 @@ export type IconName =
   | 'chevron_down'
   | 'chevron_right'
   | 'filter'
-  | 'close';
+  | 'close'
+  | 'sparkles'
+  | 'auto_awesome';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName | string;
@@ -89,6 +92,8 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   chevron_right: ChevronRight,
   filter: Filter,
   close: X,
+  sparkles: Sparkles,
+  auto_awesome: Sparkles,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, size = 20, className = '', ...props }) => {

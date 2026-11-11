@@ -19,6 +19,7 @@ export interface DataTableProps<T> {
   isLoading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  variant?: 'purple' | 'neutral' | 'soft-purple';
   className?: string;
 }
 
@@ -31,6 +32,7 @@ export function DataTable<T>({
   isLoading = false,
   emptyTitle = 'No hay registros',
   emptyDescription = 'No se encontraron filas que coincidan con la búsqueda.',
+  variant = 'soft-purple',
   className = '',
 }: DataTableProps<T>) {
   if (isLoading) {
@@ -53,24 +55,49 @@ export function DataTable<T>({
     );
   }
 
+  const isSoftPurple = variant === 'soft-purple';
+  const isNeutral = variant === 'neutral';
+
   return (
-    <div className={`w-full overflow-hidden rounded-xl border border-[#D0BCFF] bg-white shadow-xs ${className}`}>
+    <div
+      className={`w-full overflow-hidden rounded-xl border ${
+        isNeutral ? 'border-[#E0E0E0]' : 'border-[#D0BCFF]'
+      } bg-white shadow-xs ${className}`}
+    >
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#3F2581] text-white">
+            <tr
+              className={
+                isSoftPurple
+                  ? 'bg-[#EADDFF] text-[#3F2581] border-b border-[#D0BCFF]'
+                  : isNeutral
+                  ? 'bg-[#F9FAFB] text-[#475467] border-b border-[#EAECF0]'
+                  : 'bg-[#3F2581] text-white border-b border-[#4E309D]'
+              }
+            >
               {columns.map((col, index) => (
                 <th
                   key={index}
                   style={{ width: col.width }}
-                  className="px-6 py-4 text-sm font-semibold tracking-wider uppercase border-b border-[#4E309D]"
+                  className={`px-6 py-4 text-base font-bold tracking-wider uppercase ${
+                    isSoftPurple
+                      ? 'text-[#3F2581]'
+                      : isNeutral
+                      ? 'text-[#475467]'
+                      : 'text-white'
+                  }`}
                 >
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#EADDFF]/50 text-sm">
+          <tbody
+            className={`divide-y ${
+              isNeutral ? 'divide-[#EAECF0]' : 'divide-[#EADDFF]/50'
+            } text-sm`}
+          >
             {data.map((row, rowIndex) => {
               const id = keyExtractor(row);
               const isSelected = selectedId === id;
@@ -81,7 +108,15 @@ export function DataTable<T>({
                   onClick={() => onSelectRow && onSelectRow(row)}
                   className={`transition-colors cursor-pointer select-none ${
                     isSelected
-                      ? 'bg-[#EADDFF] font-semibold text-[#1C1B1F]'
+                      ? isSoftPurple
+                        ? 'bg-[#FBF9FE] font-medium text-[#1C1B1F]'
+                        : isNeutral
+                        ? 'bg-[#F2F4F7] font-medium text-[#101828]'
+                        : 'bg-[#EADDFF] font-semibold text-[#1C1B1F]'
+                      : isSoftPurple
+                      ? 'hover:bg-[#F4F0FF]/60 text-[#333333]'
+                      : isNeutral
+                      ? 'hover:bg-[#F9FAFB] text-[#344054]'
                       : 'hover:bg-[#F4F0FF] text-[#333333]'
                   }`}
                 >
