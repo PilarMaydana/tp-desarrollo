@@ -124,20 +124,35 @@ class GestorCompetenciaTest {
     }
 
     @Test
-    @DisplayName("Listar competencias retorna todos los elementos en formato DTO")
-    void listarCompetencias_retornaLista() {
-        Competencia c1 = new Competencia();
-        c1.setId(1L);
-        c1.setCodigo("COM-01");
-        c1.setNombre("COMUNICACIÓN");
-        c1.setDescripcion("CAPACIDAD DE TRANSMISIÓN");
+    @DisplayName("Listar competencias con datos retorna DTOs ordenados por nombre ascendente")
+    void listar_conDatos_retornaListaOrdenadaPorNombreAscendente() {
+        Competencia c1 = new Competencia(1L, "TRAB-01", "TRABAJO EN EQUIPO", "COLABORAR CON OTROS");
+        Competencia c2 = new Competencia(2L, "COM-01", "COMUNICACIÓN", "CAPACIDAD DE TRANSMISIÓN");
+        Competencia c3 = new Competencia(3L, "LID-01", "LIDERAZGO", "GUIAR EQUIPOS");
 
-        when(competenciaDAO.findAll()).thenReturn(List.of(c1));
+        when(competenciaDAO.findAll()).thenReturn(List.of(c1, c2, c3));
 
-        List<CompetenciaDTO> resultado = gestorCompetencia.listarCompetencias();
+        List<CompetenciaDTO> resultado = gestorCompetencia.listar();
 
-        assertThat(resultado).hasSize(1);
-        assertThat(resultado.get(0).getId()).isEqualTo(1L);
+        assertThat(resultado).hasSize(3);
+        assertThat(resultado)
+                .extracting(CompetenciaDTO::getNombre)
+                .containsExactly("COMUNICACIÓN", "LIDERAZGO", "TRABAJO EN EQUIPO");
+        assertThat(resultado.get(0).getId()).isEqualTo(2L);
         assertThat(resultado.get(0).getCodigo()).isEqualTo("COM-01");
+        assertThat(resultado.get(1).getId()).isEqualTo(3L);
+        assertThat(resultado.get(1).getCodigo()).isEqualTo("LID-01");
+        assertThat(resultado.get(2).getId()).isEqualTo(1L);
+        assertThat(resultado.get(2).getCodigo()).isEqualTo("TRAB-01");
+    }
+
+    @Test
+    @DisplayName("Listar competencias cuando no hay registros retorna lista vacía")
+    void listar_listaVacia_retornaListaVacia() {
+        when(competenciaDAO.findAll()).thenReturn(List.of());
+
+        List<CompetenciaDTO> resultado = gestorCompetencia.listar();
+
+        assertThat(resultado).isNotNull().isEmpty();
     }
 }

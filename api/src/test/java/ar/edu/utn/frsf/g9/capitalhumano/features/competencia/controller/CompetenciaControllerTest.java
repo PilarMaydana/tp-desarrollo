@@ -107,17 +107,36 @@ class CompetenciaControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/competencias retorna 200 OK y la lista de competencias")
-    void listarCompetencias_exitoso200() throws Exception {
+    @DisplayName("GET /api/competencias con datos retorna 200 OK y la lista ordenada de competencias")
+    void listarCompetencias_conDatos200() throws Exception {
         CompetenciaDTO c1 = new CompetenciaDTO(1L, "COM-01", "COMUNICACIÓN", "CAPACIDAD DE TRANSMITIR IDEAS");
-        when(gestorCompetencia.listarCompetencias()).thenReturn(List.of(c1));
+        CompetenciaDTO c2 = new CompetenciaDTO(2L, "LID-01", "LIDERAZGO", "GUIAR EQUIPOS DE TRABAJO");
+        when(gestorCompetencia.listar()).thenReturn(List.of(c1, c2));
 
         mockMvc.perform(get("/api/competencias"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].codigo").value("COM-01"))
-                .andExpect(jsonPath("$[0].nombre").value("COMUNICACIÓN"));
+                .andExpect(jsonPath("$[0].nombre").value("COMUNICACIÓN"))
+                .andExpect(jsonPath("$[0].descripcion").value("CAPACIDAD DE TRANSMITIR IDEAS"))
+                .andExpect(jsonPath("$[1].id").value(2))
+                .andExpect(jsonPath("$[1].codigo").value("LID-01"))
+                .andExpect(jsonPath("$[1].nombre").value("LIDERAZGO"));
+
+        verify(gestorCompetencia).listar();
+    }
+
+    @Test
+    @DisplayName("GET /api/competencias sin registros retorna 200 OK y lista vacía")
+    void listarCompetencias_listaVacia200() throws Exception {
+        when(gestorCompetencia.listar()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/competencias"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(gestorCompetencia).listar();
     }
 
     @Test

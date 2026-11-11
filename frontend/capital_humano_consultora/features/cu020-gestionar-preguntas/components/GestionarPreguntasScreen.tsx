@@ -162,7 +162,7 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
           {/* Grid de Filtros con NotchedField */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Filtro: Competencia */}
-            <NotchedField label="Competencia">
+            <NotchedField label="Competencia" labelBgClassName="bg-[linear-gradient(to_bottom,#FBF9FE_50%,#FFFFFF_50%)]">
               <Select
                 options={competenciaOptions}
                 value={filtros.competencia || ''}
@@ -177,7 +177,7 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
             </NotchedField>
 
             {/* Filtro: Factor */}
-            <NotchedField label="Factor">
+            <NotchedField label="Factor" labelBgClassName="bg-[linear-gradient(to_bottom,#FBF9FE_50%,#FFFFFF_50%)]">
               <Select
                 options={factorOptions}
                 value={filtros.factor || ''}
@@ -192,7 +192,7 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
             </NotchedField>
 
             {/* Filtro: Nombre de Pregunta */}
-            <NotchedField label="Nombre de Pregunta">
+            <NotchedField label="Nombre de Pregunta" labelBgClassName="bg-[linear-gradient(to_bottom,#FBF9FE_50%,#FFFFFF_50%)]">
               <Input
                 placeholder="Ej: Liderazgo estratégico..."
                 value={filtros.nombre || ''}

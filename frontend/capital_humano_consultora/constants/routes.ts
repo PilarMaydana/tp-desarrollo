@@ -10,8 +10,8 @@ export const ROUTES = {
   CONSULTOR: {
     EVALUACIONES: '/en-desarrollo?modulo=Evaluación+de+Candidatos',
     COMPETENCIAS: '/competencias',
-    COMPETENCIAS_NUEVO: '/competencias/nuevo',
-    COMPETENCIAS_NUEVA: '/competencias/nuevo',
+    COMPETENCIAS_NUEVO: '/competencias/nueva',
+    COMPETENCIAS_NUEVA: '/competencias/nueva',
     REPORTES: '/en-desarrollo?modulo=Reportes',
     PREGUNTAS: '/preguntas',
     PREGUNTAS_NUEVO: '/preguntas/nuevo',

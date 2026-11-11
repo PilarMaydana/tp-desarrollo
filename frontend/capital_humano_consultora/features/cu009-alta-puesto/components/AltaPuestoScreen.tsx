@@ -61,19 +61,28 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
   }));
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-12">
-      {/* Título de la pantalla */}
-      <div className="flex flex-col">
-        <h1 className="text-2xl md:text-3xl font-bold text-[#3F2581]">
-          {titulo}
-        </h1>
-        <p className="text-sm text-[#757575] mt-1">
-          {subtitulo}
-        </p>
-      </div>
+    <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto pb-12">
+      {/* Migas de pan idénticas al sistema de navegación */}
+      <nav aria-label="Migas de pan" className="flex items-center gap-2 text-sm text-[#757575] font-medium">
+        <span>Gestión de Puestos</span>
+        <span className="text-[#9E9E9E]">&gt;</span>
+        <span className="font-semibold text-[#3F2581]">{titulo}</span>
+      </nav>
 
-      {/* Formulario Principal (Paso 1 y 2) */}
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-7">
+      {/* Card principal con borde suave y fondo blanco */}
+      <div className="bg-white rounded-2xl md:rounded-3xl border border-[#D0BCFF] shadow-xs p-6 sm:p-10 md:p-12">
+        {/* Título de la pantalla */}
+        <div className="flex flex-col mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#3F2581]">
+            {titulo}
+          </h1>
+          <p className="text-sm text-[#757575] mt-1">
+            {subtitulo}
+          </p>
+        </div>
+
+        {/* Formulario Principal (Paso 1 y 2) */}
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-7">
         {/* Fila 1: Código y Nombre del puesto */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1">
@@ -265,7 +274,8 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
             Aceptar
           </Button>
         </ActionToolbar>
-      </form>
+        </form>
+      </div>
 
       {/* Modal de Confirmación de Éxito (Paso 3 y 4 del Flujo Principal) */}
       <ModalConfirmacionExito

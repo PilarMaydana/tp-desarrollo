@@ -9,6 +9,7 @@ export interface NotchedFieldProps {
   helperText?: string;
   children: React.ReactNode;
   className?: string;
+  labelBgClassName?: string;
 }
 
 export const NotchedField: React.FC<NotchedFieldProps> = ({
@@ -18,17 +19,20 @@ export const NotchedField: React.FC<NotchedFieldProps> = ({
   helperText,
   children,
   className = '',
+  labelBgClassName = 'bg-white',
 }) => {
   return (
     <div className={`relative flex flex-col w-full pt-2 ${className}`}>
-      {/* Label superpuesta estilo Material Notched Outline */}
-      <label className="absolute -top-1 left-4 z-10 px-2 bg-white text-xs md:text-sm font-medium text-[#3F2581] pointer-events-none transition-all flex items-center gap-0.5">
-        <span>{label}</span>
-        {required && <span className="text-[#D32F2F] font-bold">*</span>}
-      </label>
-
-      {/* Contenedor del control (Input, Select, Textarea) */}
-      <div className="w-full">{children}</div>
+      {/* Contenedor del control (Input, Select, Textarea) con label centrada en el borde superior */}
+      <div className="relative w-full">
+        <label
+          className={`absolute top-0 -translate-y-1/2 left-3.5 z-10 px-1.5 py-0 leading-none ${labelBgClassName} text-xs md:text-sm font-medium text-[#3F2581] pointer-events-none transition-all flex items-center gap-0.5`}
+        >
+          <span>{label}</span>
+          {required && <span className="text-[#D32F2F] font-bold">*</span>}
+        </label>
+        {children}
+      </div>
 
       {/* Error / Helper text */}
       {error ? (
