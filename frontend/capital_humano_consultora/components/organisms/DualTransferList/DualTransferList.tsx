@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState } from '@/components/molecules/EmptyState';
@@ -12,6 +12,97 @@ export interface TransferItem {
   subtitle?: string;
   weight?: number; // 0-10 si aplica
 }
+
+interface WeightInputProps {
+  itemId: string;
+  weight?: number;
+  onChange: (val: number | undefined) => void;
+}
+
+const WeightInput: React.FC<WeightInputProps> = ({ weight, onChange }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState<string>(() =>
+    weight !== undefined && weight !== null ? String(weight) : ''
+  );
+
+  useEffect(() => {
+    // Si el input está enfocado, no pisar lo que el usuario está escribiendo activamente
+    if (document.activeElement === inputRef.current) {
+      return;
+    }
+    setInputValue(weight !== undefined && weight !== null ? String(weight) : '');
+  }, [weight]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+
+    // Permitir solo dígitos, punto y coma
+    let cleaned = raw.replace(/[^0-9.,]/g, '');
+
+    // Permitir como máximo un único separador decimal (. o ,)
+    const matches = cleaned.match(/[.,]/g);
+    if (matches && matches.length > 1) {
+      const firstIndex = cleaned.search(/[.,]/);
+      const before = cleaned.slice(0, firstIndex + 1);
+      const after = cleaned.slice(firstIndex + 1).replace(/[.,]/g, '');
+      cleaned = before + after;
+    }
+
+    setInputValue(cleaned);
+
+    // Normalizar a punto para interpretar el valor numérico
+    const normalized = cleaned.replace(',', '.');
+    if (normalized === '' || normalized === '.') {
+      onChange(undefined);
+      return;
+    }
+
+    const parsed = parseFloat(normalized);
+    if (!isNaN(parsed)) {
+      // Notificar al padre sin recortar agresivamente durante el tipeo libre
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    const normalized = inputValue.trim().replace(',', '.');
+    if (normalized === '' || normalized === '.') {
+      setInputValue('');
+      onChange(undefined);
+      return;
+    }
+
+    const parsed = parseFloat(normalized);
+    if (isNaN(parsed)) {
+      setInputValue('');
+      onChange(undefined);
+      return;
+    }
+
+    let finalVal = parsed;
+    if (parsed > 10) {
+      finalVal = 10;
+    } else if (parsed < 0) {
+      finalVal = 0;
+    }
+
+    setInputValue(String(finalVal));
+    onChange(finalVal);
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      placeholder="0-10"
+      value={inputValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      className="w-20 h-9 px-2 text-center text-sm font-bold text-[#3F2581] bg-[#F4F0FF] border-2 border-[#3F2581] rounded-lg outline-none focus:ring-2 focus:ring-[#896ECB]"
+    />
+  );
+};
 
 export interface DualTransferListProps {
   availableTitle?: string;
@@ -66,7 +157,7 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
     if (checkedAvailableIds.length === 0) return;
     const itemsToAdd: TransferItem[] = unselectedAvailable
       .filter((i) => checkedAvailableIds.includes(i.id))
-      .map((i) => ({ ...i, weight: i.weight ?? 5 }));
+      .map((i) => ({ ...i, weight: i.weight }));
 
     onChange([...selectedItems, ...itemsToAdd]);
     setCheckedAvailableIds([]);
@@ -83,11 +174,10 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
     setCheckedSelectedIds((prev) => prev.filter((i) => i !== id));
   };
 
-  const handleWeightChange = (id: string, weightVal: number) => {
-    const clamped = Math.max(0, Math.min(10, weightVal || 0));
+  const handleWeightChange = (id: string, weightVal: number | undefined) => {
     onChange(
       selectedItems.map((item) =>
-        item.id === id ? { ...item, weight: clamped } : item
+        item.id === id ? { ...item, weight: weightVal } : item
       )
     );
   };
@@ -207,13 +297,10 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
                   {withWeights && (
                     <div className="flex items-center gap-2 shrink-0">
                       <label className="text-xs text-[#757575] hidden sm:inline">Pond:</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="10"
-                        value={item.weight ?? 0}
-                        onChange={(e) => handleWeightChange(item.id, parseInt(e.target.value, 10))}
-                        className="w-16 h-9 px-2 text-center text-sm font-bold text-[#3F2581] bg-[#F4F0FF] border-2 border-[#3F2581] rounded-lg outline-none focus:ring-2 focus:ring-[#896ECB]"
+                      <WeightInput
+                        itemId={item.id}
+                        weight={item.weight}
+                        onChange={(val) => handleWeightChange(item.id, val)}
                       />
                     </div>
                   )}

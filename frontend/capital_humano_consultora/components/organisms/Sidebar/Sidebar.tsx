@@ -59,7 +59,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           </div>
 
           {visibleItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+            const isPuestos = item.label === 'Puestos' && (pathname === '/' || pathname.startsWith('/puestos'));
+            const isFactores = item.label === 'Factores' && pathname.startsWith('/factores');
+            const isPreguntas = item.label === 'Preguntas' && pathname.startsWith('/preguntas');
+            const isCompetencias = item.label === 'Competencias' && pathname.startsWith('/competencias');
+            const isActive = isPuestos || isFactores || isPreguntas || isCompetencias || pathname === item.href;
 
             return (
               <Link

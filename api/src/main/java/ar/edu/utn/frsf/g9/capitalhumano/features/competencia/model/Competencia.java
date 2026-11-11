@@ -1,5 +1,6 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.competencia.model;
 
+import ar.edu.utn.frsf.g9.capitalhumano.shared.model.EntidadAuditable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,7 +13,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "competencia")
-public class Competencia {
+public class Competencia extends EntidadAuditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +28,9 @@ public class Competencia {
     @Column(name = "descripcion", length = 500, nullable = false)
     private String descripcion;
 
+    @Column(name = "tipo", length = 50)
+    private String tipo;
+
     public Competencia() {
     }
 
@@ -35,6 +39,14 @@ public class Competencia {
         this.codigo = codigo;
         this.nombre = nombre;
         this.descripcion = descripcion;
+    }
+
+    public Competencia(Long id, String codigo, String nombre, String descripcion, String tipo) {
+        this.id = id;
+        this.codigo = codigo;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.tipo = tipo;
     }
 
     public Long getId() {
@@ -67,5 +79,13 @@ public class Competencia {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 }

@@ -55,7 +55,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}
       const errorData = await response.json().catch(() => null);
       throw new ApiError(
         response.status,
-        errorData?.message || `Error en la solicitud: ${response.statusText}`,
+        errorData?.mensaje || errorData?.message || `Error en la solicitud: ${response.statusText}`,
         errorData
       );
     }

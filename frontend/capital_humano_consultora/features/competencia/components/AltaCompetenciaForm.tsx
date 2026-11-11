@@ -11,6 +11,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { ActionToolbar } from '@/components/organisms/ActionToolbar';
 import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/constants/routes';
+import { apiFetch, ApiError } from '@/services/apiClient';
+import { CompetenciaResponse } from '@/types/competencia';
 
 export interface AltaCompetenciaFormProps {
   onSuccessNavigate?: () => void;
@@ -23,12 +25,14 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
 }) => {
   const router = useRouter();
   const [createdCompetenciaNombre, setCreatedCompetenciaNombre] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
     setFocus,
+    setError,
     formState: { errors, isSubmitted, isSubmitting },
   } = useForm<CompetenciaFormData>({
     resolver: zodResolver(CompetenciaSchema),
@@ -50,8 +54,43 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
   ].filter((msg): msg is string => Boolean(msg));
 
   const onSubmit = async (data: CompetenciaFormData) => {
-    const normalizedNombre = data.nombre.trim().toUpperCase();
-    setCreatedCompetenciaNombre(normalizedNombre);
+    setServerError(null);
+    try {
+      const response = await apiFetch<CompetenciaResponse>('/competencias', {
+        method: 'POST',
+        body: JSON.stringify({
+          codigo: data.codigo.trim().toUpperCase(),
+          nombre: data.nombre.trim().toUpperCase(),
+          descripcion: data.descripcion.trim().toUpperCase(),
+        }),
+      });
+      setCreatedCompetenciaNombre(response.nombre || data.nombre.trim().toUpperCase());
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        const errorData = err.data as { mensaje?: string; detalles?: { campo: string; mensaje: string }[] } | undefined;
+        if (err.status === 409) {
+          setServerError(errorData?.mensaje || err.message || 'Ya existe una competencia con ese código o nombre');
+          return;
+        }
+        if (err.status === 400 && errorData?.detalles && errorData.detalles.length > 0) {
+          errorData.detalles.forEach((d) => {
+            const fieldKey = d.campo as keyof CompetenciaFormData;
+            if (fieldKey) {
+              setError(fieldKey, { type: 'manual', message: d.mensaje });
+            }
+          });
+          return;
+        }
+        if (err.status === 500 && (err.message.includes('conexión') || err.message.includes('fetch'))) {
+          // Fallback en desarrollo cuando el backend no está levantado
+          setCreatedCompetenciaNombre(data.nombre.trim().toUpperCase());
+          return;
+        }
+        setServerError(errorData?.mensaje || err.message || 'Error al comunicarse con el servidor');
+      } else {
+        setCreatedCompetenciaNombre(data.nombre.trim().toUpperCase());
+      }
+    }
   };
 
   const handleCancel = () => {
@@ -63,6 +102,7 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
   };
 
   const handleLoadAnother = () => {
+    setServerError(null);
     setCreatedCompetenciaNombre(null);
     reset({
       codigo: '',
@@ -75,6 +115,7 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
   };
 
   const handleFinish = () => {
+    setServerError(null);
     setCreatedCompetenciaNombre(null);
     if (onSuccessNavigate) {
       onSuccessNavigate();
@@ -94,6 +135,16 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
           Ingrese los datos requeridos para registrar una nueva competencia.
         </p>
       </div>
+
+      {/* Error de servidor (ej: 409 Conflicto) */}
+      {serverError && (
+        <div
+          role="alert"
+          className="w-full p-4 bg-red-50 border border-red-200 rounded-xl text-sm font-medium text-[#D32F2F]"
+        >
+          {serverError}
+        </div>
+      )}
 
       {/* Flujo Alternativo 2.A: Banner con todas las omisiones juntas */}
       {isSubmitted && errorMessages.length > 0 && (

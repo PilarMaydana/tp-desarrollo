@@ -10,14 +10,10 @@ const MOCK_EMPRESAS: Empresa[] = [
 ];
 
 const MOCK_COMPETENCIAS: Competencia[] = [
-  { id: 'comp-1', nombre: 'Liderazgo y Gestión de Equipos', descripcion: 'Capacidad para orientar y coordinar' },
-  { id: 'comp-2', nombre: 'Resolución de Conflictos', descripcion: 'Habilidad para conciliar y mediar' },
-  { id: 'comp-3', nombre: 'Pensamiento Analítico', descripcion: 'Capacidad para desglosar problemas complejos' },
-  { id: 'comp-4', nombre: 'Comunicación Asertiva', descripcion: 'Habilidad para transmitir ideas de forma clara' },
-  { id: 'comp-5', nombre: 'Adaptabilidad al Cambio', descripcion: 'Flexibilidad ante nuevos escenarios' },
-  { id: 'comp-6', nombre: 'Trabajo en Equipo', descripcion: 'Colaboración efectiva con pares y superiores' },
-  { id: 'comp-7', nombre: 'Orientación a Resultados', descripcion: 'Foco en el cumplimiento de objetivos' },
-  { id: 'comp-8', nombre: 'Negociación Estratégica', descripcion: 'Acuerdos beneficiosos a mediano y largo plazo' },
+  { id: '1', nombre: 'COMUNICACIÓN', descripcion: 'Capacidad para transmitir ideas e información de manera clara y efectiva.' },
+  { id: '2', nombre: 'LIDERAZGO', descripcion: 'Capacidad para guiar, motivar y dirigir equipos de trabajo hacia el logro de objetivos.' },
+  { id: '3', nombre: 'TRABAJO EN EQUIPO', descripcion: 'Capacidad para colaborar de manera eficaz con otras personas para el logro de metas comunes.' },
+  { id: '4', nombre: 'RESOLUCIÓN DE PROBLEMAS', descripcion: 'Capacidad para identificar problemas complejos y evaluar opciones de solución.' },
 ];
 
 let mockPuestosList: Puesto[] = [
