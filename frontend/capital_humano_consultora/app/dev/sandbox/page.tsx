@@ -1,33 +1,17 @@
 'use client';
 
-import React, { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
-import { AltaPuestoScreen } from '@/features/cu009-alta-puesto';
-import { ROUTES } from '@/constants/routes';
-
-function DevSandboxContent() {
-  const searchParams = useSearchParams();
-  const consultorParam =
-    searchParams.get('consultor') ||
-    searchParams.get('usuario') ||
-    undefined;
-
-  return (
-    <DashboardLayout consultorNombre={consultorParam}>
-      <AltaPuestoScreen
-        consultorNombre={consultorParam}
-        onSuccessRedirect={ROUTES.CONSULTOR.PUESTOS}
-        onCancelRedirect={ROUTES.CONSULTOR.PUESTOS}
-      />
-    </DashboardLayout>
-  );
-}
 
 export default function DevSandboxPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F6F6F6]" />}>
-      <DevSandboxContent />
-    </Suspense>
+    <DashboardLayout>
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border border-gray-200 max-w-lg mx-auto mt-12">
+        <h1 className="text-2xl font-bold text-[#3F2581] mb-2">Ruta Sandbox de Desarrollo</h1>
+        <p className="text-sm text-gray-600">
+          El sandbox se encuentra actualmente libre y disponible para el desarrollo aislado del próximo caso de uso.
+        </p>
+      </div>
+    </DashboardLayout>
   );
 }

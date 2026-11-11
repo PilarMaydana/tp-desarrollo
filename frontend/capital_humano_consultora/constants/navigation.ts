@@ -35,6 +35,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['CONSULTOR'],
   },
   {
+    label: 'Factores',
+    href: ROUTES.CONSULTOR.FACTORES_NUEVO,
+    icon: 'tune',
+    roles: ['CONSULTOR'],
+  },
+  {
     label: 'Puestos',
     href: ROUTES.CONSULTOR.PUESTOS_NUEVO,
     icon: 'work',
