@@ -9,6 +9,7 @@ import {
   FactorItem,
 } from '../types';
 import { gestionarPreguntasService } from '../services/gestionarPreguntasService';
+import { ROUTES } from '@/constants/routes';
 
 export interface UseGestionarPreguntasOptions {
   onNavigateNuevo?: () => void;
@@ -173,7 +174,7 @@ export function useGestionarPreguntas(options: UseGestionarPreguntasOptions = {}
       options.onNavigateNuevo();
       return;
     }
-    router.push('/en-desarrollo?modulo=Alta+de+Pregunta+(CU+021)');
+    router.push(ROUTES.CONSULTOR.PREGUNTAS_NUEVO);
   }, [options, router]);
 
   // Botón «Modificar» -> Requiere selección previa (CU 022)
