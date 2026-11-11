@@ -13,8 +13,8 @@ import jakarta.persistence.Table;
 /**
  * Entidad JPA que representa una Opción de Respuesta vinculada a una Pregunta (CU 020 / CU 021).
  */
-@Entity
-@Table(name = "opcion_respuesta")
+@Entity(name = "PreguntaOpcionRespuesta")
+@Table(name = "pregunta_opcion_respuesta")
 public class OpcionRespuesta {
 
     @Id

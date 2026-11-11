@@ -26,8 +26,20 @@ INSERT INTO pregunta (nombre, enunciado, descripcion, factor_id, eliminado) VALU
     ('PREGUNTA POO', '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?', 'CONCEPTOS BÁSICOS', 3, FALSE),
     ('PATRONES DE DISEÑO', '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?', 'PREGUNTA DE ARQUITECTURA', 3, FALSE);
 
-INSERT INTO opcion_respuesta (pregunta_id, nombre, descripcion, nro_orden, ponderacion) VALUES
+INSERT INTO pregunta_opcion_respuesta (pregunta_id, nombre, descripcion, nro_orden, ponderacion) VALUES
     (1, 'OPCION A', 'UN PARADIGMA BASADO EN OBJETOS', 1, 1.0),
     (1, 'OPCION B', 'UN LENGUAJE DE PROGRAMACIÓN', 2, 0.0),
     (2, 'INSTANCIA ÚNICA', 'GARANTIZA UNA ÚNICA INSTANCIA', 1, 1.0),
     (2, 'MÚLTIPLES INSTANCIAS', 'CREA MUCHAS INSTANCIAS', 2, 0.0);
+
+INSERT INTO opcion_respuesta (nombre, descripcion) VALUES
+    ('FRECUENCIA', 'ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO'),
+    ('ACUERDO', 'ESCALA DE GRADO DE ACUERDO CON LA AFIRMACIÓN');
+
+INSERT INTO item_opcion_respuesta (opcion_respuesta_id, orden, descripcion) VALUES
+    (1, 1, 'NUNCA'),
+    (1, 2, 'A VECES'),
+    (1, 3, 'SIEMPRE'),
+    (2, 1, 'EN DESACUERDO'),
+    (2, 2, 'NEUTRAL'),
+    (2, 3, 'DE ACUERDO');
