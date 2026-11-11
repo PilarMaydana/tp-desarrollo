@@ -17,6 +17,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['CONSULTOR'],
   },
   {
+    label: 'Competencias',
+    href: ROUTES.CONSULTOR.COMPETENCIAS,
+    icon: 'check',
+    roles: ['CONSULTOR'],
+  },
+  {
     label: 'Reportes',
     href: ROUTES.CONSULTOR.REPORTES,
     icon: 'bar_chart',

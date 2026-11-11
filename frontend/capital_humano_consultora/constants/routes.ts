@@ -8,6 +8,8 @@ export const ROUTES = {
   },
   CONSULTOR: {
     EVALUACIONES: '/prototipos/evaluaciones/evaluar',
+    COMPETENCIAS: '/prototipos/competencias',
+    COMPETENCIAS_NUEVA: '/prototipos/competencias/nueva',
     REPORTES: '/prototipos/reportes',
     PREGUNTAS: '/prototipos/preguntas',
     ORDEN_MERITOS: '/prototipos/orden-meritos',

@@ -38,6 +38,20 @@ export default function DevSandboxPage() {
               <span className="text-xs text-gray-500">{ROUTES.AUTH.LOGIN}</span>
             </Link>
             <Link
+              href={ROUTES.CONSULTOR.COMPETENCIAS}
+              className="p-3 border rounded-lg hover:border-[#3F2581] hover:bg-purple-50/50 transition-colors flex items-center justify-between"
+            >
+              <span className="font-medium text-gray-800">Competencias</span>
+              <span className="text-xs text-gray-500">{ROUTES.CONSULTOR.COMPETENCIAS}</span>
+            </Link>
+            <Link
+              href={ROUTES.CONSULTOR.COMPETENCIAS_NUEVA}
+              className="p-3 border rounded-lg hover:border-[#3F2581] hover:bg-purple-50/50 transition-colors flex items-center justify-between"
+            >
+              <span className="font-medium text-gray-800">Nueva Competencia</span>
+              <span className="text-xs text-gray-500">{ROUTES.CONSULTOR.COMPETENCIAS_NUEVA}</span>
+            </Link>
+            <Link
               href={ROUTES.CONSULTOR.PUESTOS}
               className="p-3 border rounded-lg hover:border-[#3F2581] hover:bg-purple-50/50 transition-colors flex items-center justify-between"
             >
@@ -92,4 +106,3 @@ export default function DevSandboxPage() {
     </div>
   );
 }
-
