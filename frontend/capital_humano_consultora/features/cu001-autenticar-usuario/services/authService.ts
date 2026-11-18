@@ -21,6 +21,15 @@ export const cu001AuthService = {
       contrasena: dto.contrasena,
     };
 
+    // El usuario genérico ADMIN está deshabilitado para preservar la trazabilidad y auditoría
+    if (payload.usuario === 'ADMIN') {
+      throw new ApiError(401, 'El usuario o la contraseña no son válidos', {
+        status: 401,
+        codigo: 'AUTENTICACION_FALLIDA',
+        mensaje: 'El usuario o la contraseña no son válidos',
+      });
+    }
+
     try {
       return await apiFetch<AuthResponseDTO>('/auth/consultor', {
         method: 'POST',
