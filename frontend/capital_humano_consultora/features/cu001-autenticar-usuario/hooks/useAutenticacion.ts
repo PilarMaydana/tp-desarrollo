@@ -94,7 +94,7 @@ export function useAutenticacion(options: UseAutenticacionOptions = {}) {
         options.onSuccessConsultor(response);
       } else {
         // Redirección por defecto para Consultor: pantalla principal CU009 (Dar de alta Puesto)
-        router.push(ROUTES.CONSULTOR.PUESTOS_NUEVO);
+        router.replace(ROUTES.CONSULTOR.PUESTOS_NUEVO);
       }
     } catch (err: unknown) {
       handleAuthError(err, 'CONSULTOR');
@@ -123,7 +123,7 @@ export function useAutenticacion(options: UseAutenticacionOptions = {}) {
         options.onSuccessCandidato(response);
       } else {
         // Redirección para Candidato: acceso directo a su cuestionario (CU026)
-        router.push(ROUTES.CANDIDATO.CUESTIONARIO);
+        router.replace(ROUTES.CANDIDATO.CUESTIONARIO);
       }
     } catch (err: unknown) {
       handleAuthError(err, 'CANDIDATO');

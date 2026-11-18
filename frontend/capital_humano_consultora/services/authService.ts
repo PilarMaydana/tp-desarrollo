@@ -107,6 +107,8 @@ export const authService = {
       localStorage.setItem('auth_user', JSON.stringify(authResponse.user));
       if (authResponse.user.cuestionarioId) {
         localStorage.setItem('cuestionario_id', String(authResponse.user.cuestionarioId));
+      } else {
+        localStorage.removeItem('cuestionario_id');
       }
     }
   },

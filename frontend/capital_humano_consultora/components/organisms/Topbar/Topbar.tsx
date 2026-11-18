@@ -29,7 +29,7 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
 
   const handleLogout = () => {
     logout();
-    router.push(ROUTES.AUTH.LOGIN);
+    router.replace(ROUTES.AUTH.LOGIN);
   };
 
   const isCandidato = user?.role === 'CANDIDATO';
