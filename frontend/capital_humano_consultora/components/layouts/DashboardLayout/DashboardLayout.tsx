@@ -4,6 +4,7 @@ import React from 'react';
 import { Topbar } from '@/components/organisms/Topbar';
 import { Sidebar } from '@/components/organisms/Sidebar';
 import { SidebarProvider } from '@/context/SidebarContext';
+import { useAuth } from '@/context/AuthContext';
 
 export interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -12,9 +13,12 @@ export interface DashboardLayoutProps {
 }
 
 function DashboardContent({ children, consultorNombre, className = '' }: DashboardLayoutProps) {
+  const { user } = useAuth();
+  const isCandidato = user?.role === 'CANDIDATO';
+
   return (
     <div className="min-h-screen w-full flex flex-col bg-[#F6F6F6]">
-      <Sidebar />
+      {!isCandidato && <Sidebar />}
       <Topbar consultorNombre={consultorNombre} />
       <main className={`flex-1 w-full px-4 sm:px-8 lg:px-12 py-6 sm:py-8 ${className}`}>
         {children}
