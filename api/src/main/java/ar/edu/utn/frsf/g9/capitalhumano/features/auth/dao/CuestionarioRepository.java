@@ -29,4 +29,17 @@ public interface CuestionarioRepository extends JpaRepository<Cuestionario, Long
             List<EstadoCuestionario> estados,
             String claveAcceso
     );
+
+    /**
+     * Busca cualquier cuestionario del candidato cuya clave de acceso coincida,
+     * permitiendo el ingreso al sistema incluso si el cuestionario ya está completado o expirado.
+     *
+     * @param candidato candidato asociado al cuestionario
+     * @param claveAcceso clave de acceso al cuestionario
+     * @return cuestionario encontrado o Optional.empty()
+     */
+    Optional<Cuestionario> findByCandidatoAndClaveAcceso(
+            Candidato candidato,
+            String claveAcceso
+    );
 }

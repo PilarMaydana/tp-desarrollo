@@ -50,7 +50,7 @@ public class AuthService {
      * <p>El nombre de usuario se normaliza a mayúsculas conforme al requerimiento especial del CU.</p>
      *
      * @param request datos de ingreso de consultor
-     * @return DTO con token JWT, ID de usuario y rol "CONSULTOR"
+     * @return DTO con token JWT, ID de usuario, rol "CONSULTOR" y datos nominativos
      * @throws AutenticacionException si las credenciales son inválidas
      */
     public AuthResponseDTO autenticarConsultor(ConsultorLoginRequestDTO request) {
@@ -70,16 +70,25 @@ public class AuthService {
         Long usuarioId = 1L; // ID representativo del consultor
         String token = jwtTokenService.generarTokenConsultor(usuarioNormalizado, usuarioId);
 
+        String nombre = "ADMIN".equals(usuarioNormalizado) ? "Administrador" : "Lucía";
+        String apellido = "ADMIN".equals(usuarioNormalizado) ? "del Sistema" : "Fernández";
+
         log.info("Consultor '{}' autenticado correctamente con ID {}", usuarioNormalizado, usuarioId);
-        return AuthResponseDTO.paraConsultor(token, usuarioId);
+        return AuthResponseDTO.paraConsultor(token, usuarioId, nombre, apellido);
     }
 
     /**
-     * Autentica a un candidato verificando su existencia, posesión de cuestionario activo o en proceso y coincidencia de clave.
+     * Autentica a un candidato conforme a la especificación oficial del CU001 (Paso 3.A.3):
+     * Comprueba que exista un candidato para el tipo y número de documento ingresados,
+     * que tenga asociado un cuestionario ACTIVO o EN_PROCESO, y que la clave ingresada
+     * coincida con la de dicho cuestionario.
+     *
+     * <p>Si el cuestionario ya está finalizado (COMPLETO) o no existe, la clave ya no es válida
+     * y se rechaza el acceso con error 401.</p>
      *
      * @param request datos de ingreso de candidato (tipo doc, nro doc, clave)
-     * @return DTO con token JWT, identificador de cuestionario y rol "CANDIDATO"
-     * @throws AutenticacionException si el candidato o cuestionario no son válidos
+     * @return DTO con token JWT, identificador del cuestionario activo, rol "CANDIDATO" y nombre/apellido
+     * @throws AutenticacionException si los datos no son válidos o el cuestionario no está activo/en proceso
      */
     @Transactional(readOnly = true)
     public AuthResponseDTO autenticarCandidato(CandidatoLoginRequestDTO request) {
@@ -97,13 +106,13 @@ public class AuthService {
                     return new AutenticacionException(ERROR_CANDIDATO);
                 });
 
-        // 2. Buscar cuestionario con estado ACTIVO o EN_PROCESO y clave coincidente
+        // 2. Regla oficial CU001 (Paso 3.A.3): Solo cuestionarios ACTIVO o EN_PROCESO
         List<EstadoCuestionario> estadosValidos = List.of(EstadoCuestionario.ACTIVO, EstadoCuestionario.EN_PROCESO);
 
         Cuestionario cuestionario = cuestionarioRepository
                 .findByCandidatoAndEstadoInAndClaveAcceso(candidato, estadosValidos, request.getClave().trim())
                 .orElseThrow(() -> {
-                    log.warn("No se encontró cuestionario activo/en proceso con la clave provista para el candidato ID {}", candidato.getId());
+                    log.warn("No se encontró cuestionario ACTIVO o EN_PROCESO con la clave provista para el candidato ID {}", candidato.getId());
                     return new AutenticacionException(ERROR_CANDIDATO);
                 });
 
@@ -111,6 +120,6 @@ public class AuthService {
         String token = jwtTokenService.generarTokenCandidato(nroDocumento, candidato.getId(), cuestionario.getId());
 
         log.info("Candidato ID {} autenticado exitosamente para Cuestionario ID {}", candidato.getId(), cuestionario.getId());
-        return AuthResponseDTO.paraCandidato(token, candidato.getId(), cuestionario.getId());
+        return AuthResponseDTO.paraCandidato(token, candidato.getId(), cuestionario.getId(), candidato.getNombre(), candidato.getApellido());
     }
 }

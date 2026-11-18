@@ -22,6 +22,12 @@ public class AuthResponseDTO {
     @Schema(description = "Identificador del cuestionario asignado (exclusivo para rol CANDIDATO)", example = "10")
     private Long cuestionarioId;
 
+    @Schema(description = "Nombre del usuario o candidato autenticado", example = "Lucía")
+    private String nombre;
+
+    @Schema(description = "Apellido del usuario o candidato autenticado", example = "Fernández")
+    private String apellido;
+
     public AuthResponseDTO() {
     }
 
@@ -36,8 +42,22 @@ public class AuthResponseDTO {
         return new AuthResponseDTO(token, "CONSULTOR", usuarioId, null);
     }
 
+    public static AuthResponseDTO paraConsultor(String token, Long usuarioId, String nombre, String apellido) {
+        AuthResponseDTO dto = new AuthResponseDTO(token, "CONSULTOR", usuarioId, null);
+        dto.setNombre(nombre);
+        dto.setApellido(apellido);
+        return dto;
+    }
+
     public static AuthResponseDTO paraCandidato(String token, Long usuarioId, Long cuestionarioId) {
         return new AuthResponseDTO(token, "CANDIDATO", usuarioId, cuestionarioId);
+    }
+
+    public static AuthResponseDTO paraCandidato(String token, Long usuarioId, Long cuestionarioId, String nombre, String apellido) {
+        AuthResponseDTO dto = new AuthResponseDTO(token, "CANDIDATO", usuarioId, cuestionarioId);
+        dto.setNombre(nombre);
+        dto.setApellido(apellido);
+        return dto;
     }
 
     public String getToken() {
@@ -70,5 +90,21 @@ public class AuthResponseDTO {
 
     public void setCuestionarioId(Long cuestionarioId) {
         this.cuestionarioId = cuestionarioId;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getApellido() {
+        return apellido;
+    }
+
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
     }
 }
