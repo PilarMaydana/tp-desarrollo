@@ -52,3 +52,14 @@ INSERT INTO item_opcion_respuesta (opcion_respuesta_id, orden, descripcion) VALU
     (4, 2, 'NEUTRO'),
     (4, 3, 'SATISFECHO'),
     (4, 4, 'MUY SATISFECHO');
+
+INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, nombre, email, eliminado) VALUES
+    (1, 'DNI', '12345678', 'PÉREZ', 'JUAN', 'juan.perez@example.com', FALSE),
+    (2, 'DNI', '87654321', 'GÓMEZ', 'MARÍA', 'maria.gomez@example.com', FALSE),
+    (3, 'DNI', '11223344', 'LÓPEZ', 'CARLOS', 'carlos.lopez@example.com', FALSE);
+
+INSERT INTO cuestionario (candidato_id, puesto_id, estado, clave_acceso, fecha_creacion, eliminado) VALUES
+    (1, 1, 'ACTIVO', 'CLAVE123', CURRENT_TIMESTAMP, FALSE),
+    (2, 1, 'EN_PROCESO', 'TEST4567', CURRENT_TIMESTAMP, FALSE),
+    (3, 1, 'COMPLETO', 'COMP1234', CURRENT_TIMESTAMP, FALSE);
+

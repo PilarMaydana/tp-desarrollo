@@ -1,0 +1,114 @@
+### ==============================================================================
+### CU001 - Autenticar Usuario (Pruebas sin UI)
+### ==============================================================================
+
+@baseUrl = http://localhost:8080/api
+
+### ------------------------------------------------------------------------------
+### 1. Autenticación de Consultor (Flujo Principal - Éxito)
+### Credenciales válidas en MockLdapAuthStrategy: ADMIN / admin123
+### Note: El usuario puede ingresarse en minúsculas y se normaliza a mayúsculas
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/auth/consultor
+Content-Type: application/json
+
+{
+  "usuario": "admin",
+  "contrasena": "admin123"
+}
+
+### ------------------------------------------------------------------------------
+### 2. Autenticación de Consultor (Flujo Alternativo 5.A - Credenciales Inválidas)
+### Respuesta esperada: HTTP 401
+### Mensaje: "El usuario o la contraseña no son válidos"
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/auth/consultor
+Content-Type: application/json
+
+{
+  "usuario": "ADMIN",
+  "contrasena": "password_incorrecta"
+}
+
+### ------------------------------------------------------------------------------
+### 3. Autenticación de Consultor (Error de Validación - Campos Vacíos)
+### Respuesta esperada: HTTP 400
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/auth/consultor
+Content-Type: application/json
+
+{
+  "usuario": "",
+  "contrasena": ""
+}
+
+### ------------------------------------------------------------------------------
+### 4. Autenticación de Candidato (Flujo Principal - Éxito)
+### Candidato existente con Cuestionario ACTIVO y clave coincidente (datos de seed.sql)
+### Tipo: DNI, Doc: 12345678, Clave: CLAVE123
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/auth/candidato
+Content-Type: application/json
+
+{
+  "tipoDocumento": "DNI",
+  "numeroDocumento": "12345678",
+  "clave": "CLAVE123"
+}
+
+### ------------------------------------------------------------------------------
+### 5. Autenticación de Candidato (Éxito con Cuestionario EN_PROCESO)
+### Tipo: DNI, Doc: 87654321, Clave: TEST4567
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/auth/candidato
+Content-Type: application/json
+
+{
+  "tipoDocumento": "DNI",
+  "numeroDocumento": "87654321",
+  "clave": "TEST4567"
+}
+
+### ------------------------------------------------------------------------------
+### 6. Autenticación de Candidato (Flujo Alternativo 3.A - Documento Inexistente)
+### Respuesta esperada: HTTP 401
+### Mensaje: "Los datos ingresados no son válidos o no existe un cuestionario para el Candidato"
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/auth/candidato
+Content-Type: application/json
+
+{
+  "tipoDocumento": "DNI",
+  "numeroDocumento": "99999999",
+  "clave": "CLAVE123"
+}
+
+### ------------------------------------------------------------------------------
+### 7. Autenticación de Candidato (Flujo Alternativo 3.A - Clave Incorrecta)
+### Respuesta esperada: HTTP 401
+### Mensaje: "Los datos ingresados no son válidos o no existe un cuestionario para el Candidato"
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/auth/candidato
+Content-Type: application/json
+
+{
+  "tipoDocumento": "DNI",
+  "numeroDocumento": "12345678",
+  "clave": "ERRONEA"
+}
+
+### ------------------------------------------------------------------------------
+### 8. Autenticación de Candidato (Flujo Alternativo 3.A - Cuestionario Ya COMPLETO)
+### Candidato existe y clave coincide, pero su cuestionario está COMPLETO (no activo/en proceso)
+### Tipo: DNI, Doc: 11223344, Clave: COMP1234
+### Respuesta esperada: HTTP 401
+### Mensaje: "Los datos ingresados no son válidos o no existe un cuestionario para el Candidato"
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/auth/candidato
+Content-Type: application/json
+
+{
+  "tipoDocumento": "DNI",
+  "numeroDocumento": "11223344",
+  "clave": "COMP1234"
+}

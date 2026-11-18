@@ -1,5 +1,6 @@
 package ar.edu.utn.frsf.g9.capitalhumano.shared.web;
 
+import ar.edu.utn.frsf.g9.capitalhumano.features.auth.exception.AutenticacionException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
@@ -27,6 +28,18 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(AutenticacionException.class)
+    public ResponseEntity<ApiError> handleAutenticacion(
+            AutenticacionException ex, HttpServletRequest request) {
+        ApiError error = ApiError.of(
+                HttpStatus.UNAUTHORIZED.value(),
+                ex.getCodigo(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
 
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<ApiError> handleRecursoNoEncontrado(

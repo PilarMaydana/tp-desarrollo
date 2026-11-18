@@ -1,5 +1,6 @@
 package ar.edu.utn.frsf.g9.capitalhumano.shared.web;
 
+import ar.edu.utn.frsf.g9.capitalhumano.features.auth.exception.AutenticacionException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
@@ -76,6 +77,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("3.b. AutenticacionException -> 401")
+    void testAutenticacion() throws Exception {
+        mockMvc.perform(get("/test/autenticacion"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.codigo").value("AUTENTICACION_FALLIDA"))
+                .andExpect(jsonPath("$.mensaje").value("El usuario o la contraseña no son válidos"))
+                .andExpect(jsonPath("$.path").value("/test/autenticacion"));
+    }
+
+    @Test
     @DisplayName("4. Body con @NotBlank vacio -> 400, codigo VALIDACION, detalles[0].campo correcto")
     void testValidacionCampos() throws Exception {
         mockMvc.perform(post("/test/validacion")
@@ -141,6 +153,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/regla-negocio")
         public void reglaNegocio() {
             throw new ReglaNegocioException("No se puede eliminar una postulacion activa");
+        }
+
+        @GetMapping("/autenticacion")
+        public void autenticacion() {
+            throw new AutenticacionException("El usuario o la contraseña no son válidos");
         }
 
         @PostMapping("/validacion")
