@@ -5,7 +5,7 @@ export const ROUTES = {
   },
   EN_DESARROLLO: '/en-desarrollo',
   AUTH: {
-    LOGIN: '/en-desarrollo?modulo=Inicio+de+Sesión',
+    LOGIN: '/login',
   },
   CONSULTOR: {
     EVALUACIONES: '/en-desarrollo?modulo=Evaluación+de+Candidatos',
@@ -24,6 +24,6 @@ export const ROUTES = {
     OPCIONES_RESPUESTA_NUEVA: '/opciones-respuesta/nueva',
   },
   CANDIDATO: {
-    CUESTIONARIO: '/en-desarrollo?modulo=Cuestionario+del+Candidato',
+    CUESTIONARIO: '/candidato/cuestionario',
   },
 } as const;

@@ -93,8 +93,8 @@ export function useAutenticacion(options: UseAutenticacionOptions = {}) {
       if (options.onSuccessConsultor) {
         options.onSuccessConsultor(response);
       } else {
-        // Redirección por defecto para Consultor: inicio de gestión de puestos
-        router.push(ROUTES.CONSULTOR.PUESTOS || '/puestos/nuevo');
+        // Redirección por defecto para Consultor: pantalla principal CU009 (Dar de alta Puesto)
+        router.push(ROUTES.CONSULTOR.PUESTOS_NUEVO);
       }
     } catch (err: unknown) {
       handleAuthError(err, 'CONSULTOR');
@@ -122,9 +122,8 @@ export function useAutenticacion(options: UseAutenticacionOptions = {}) {
       if (options.onSuccessCandidato) {
         options.onSuccessCandidato(response);
       } else {
-        // Redirección para Candidato: acceso a su portal de cuestionarios
-        // donde puede ver todos sus cuestionarios (activos, en proceso, finalizados o expirados)
-        router.push('/prototipos/candidato/cuestionario');
+        // Redirección para Candidato: acceso directo a su cuestionario (CU026)
+        router.push(ROUTES.CANDIDATO.CUESTIONARIO);
       }
     } catch (err: unknown) {
       handleAuthError(err, 'CANDIDATO');

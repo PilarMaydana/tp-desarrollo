@@ -1,17 +1,29 @@
 'use client';
 
-import React from 'react';
-import { DashboardLayout } from '@/components/layouts/DashboardLayout';
-import { AltaPuestoScreen } from '@/features/cu009-alta-puesto';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/constants/routes';
 
 export default function HomePage() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!isAuthenticated || !user) {
+      router.replace(ROUTES.AUTH.LOGIN);
+    } else if (user.role === 'CANDIDATO') {
+      router.replace(ROUTES.CANDIDATO.CUESTIONARIO);
+    } else {
+      router.replace(ROUTES.CONSULTOR.PUESTOS_NUEVO);
+    }
+  }, [user, isAuthenticated, isLoading, router]);
+
   return (
-    <DashboardLayout>
-      <AltaPuestoScreen
-        onSuccessRedirect={ROUTES.HOME}
-        onCancelRedirect={ROUTES.HOME}
-      />
-    </DashboardLayout>
+    <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center p-4">
+      <div className="w-8 h-8 border-3 border-[#3F2581] border-t-transparent rounded-full animate-spin" />
+    </div>
   );
 }

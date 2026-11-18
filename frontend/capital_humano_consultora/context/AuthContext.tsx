@@ -15,14 +15,6 @@ interface AuthContextType {
   switchRole: (role: UserRole) => void;
 }
 
-const DEFAULT_DEMO_USER: User = {
-  id: 'usr-demo-1',
-  name: 'Lucía Fernández',
-  username: 'lfernandez',
-  email: 'lucia.fernandez@consultora.com',
-  role: 'CONSULTOR',
-};
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function toTitleCase(str: string): string {
@@ -69,18 +61,19 @@ function resolveDisplayName(
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(DEFAULT_DEMO_USER);
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Restaurar usuario desde sesión guardada de forma segura
-    const timer = setTimeout(() => {
+    try {
       const saved = authService.getCurrentUser();
-      if (saved && saved.id !== DEFAULT_DEMO_USER.id) {
+      if (saved) {
         setUser(saved);
       }
-    }, 0);
-    return () => clearTimeout(timer);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
