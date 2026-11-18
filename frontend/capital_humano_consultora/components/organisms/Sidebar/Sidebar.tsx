@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -12,13 +12,49 @@ export interface SidebarProps {
   className?: string;
 }
 
+function getRoutePrefix(href: string): string {
+  const cleanPath = href.split('?')[0];
+  const firstSegment = cleanPath.split('/').filter(Boolean)[0];
+  return firstSegment ? `/${firstSegment}` : '/';
+}
+
+function isRouteActive(href: string, pathname: string): boolean {
+  if (!pathname) return false;
+  if (href.startsWith('/en-desarrollo')) {
+    return pathname === href;
+  }
+  const prefix = getRoutePrefix(href);
+  if (prefix === '/puestos' && pathname === '/') {
+    return true;
+  }
+  if (prefix === '/') {
+    return pathname === '/';
+  }
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   const { role } = useAuth();
   const { isOpen, close } = useSidebar();
   const pathname = usePathname();
 
+  const [manualToggle, setManualToggle] = useState<{
+    pathname: string;
+    groups: Record<string, boolean>;
+  }>({ pathname, groups: {} });
+
   // Filtrar items por rol activo
   const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
+
+  const handleToggleGroup = (label: string, currentExpanded: boolean) => {
+    setManualToggle((prev) => ({
+      pathname,
+      groups: {
+        ...(prev.pathname === pathname ? prev.groups : {}),
+        [label]: !currentExpanded,
+      },
+    }));
+  };
 
   return (
     <>
@@ -59,11 +95,112 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           </div>
 
           {visibleItems.map((item) => {
-            const isPuestos = item.label === 'Puestos' && (pathname === '/' || pathname.startsWith('/puestos'));
-            const isFactores = item.label === 'Factores' && pathname.startsWith('/factores');
-            const isPreguntas = item.label === 'Preguntas' && pathname.startsWith('/preguntas');
-            const isCompetencias = item.label === 'Competencias' && pathname.startsWith('/competencias');
-            const isActive = isPuestos || isFactores || isPreguntas || isCompetencias || pathname === item.href;
+            if (item.type === 'group') {
+              const isGroupRoute = item.children.some((child) =>
+                isRouteActive(child.href, pathname)
+              );
+              const hasActiveChild = item.children.some(
+                (child) => child.enabled && isRouteActive(child.href, pathname)
+              );
+              const isExpanded =
+                manualToggle.pathname === pathname && item.label in manualToggle.groups
+                  ? manualToggle.groups[item.label]
+                  : isGroupRoute;
+
+              return (
+                <div
+                  key={item.label}
+                  className={`rounded-xl border transition-colors ${
+                    isExpanded
+                      ? 'bg-[#252525] border-white/10'
+                      : 'border-transparent'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    onClick={() => handleToggleGroup(item.label, isExpanded)}
+                    className={`w-full flex items-center justify-between gap-3.5 px-4 py-3 rounded-xl text-base font-medium transition-all select-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#896ECB] ${
+                      hasActiveChild
+                        ? 'text-white font-semibold hover:bg-white/10'
+                        : 'text-[#E0E0E0] hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-3.5">
+                      <Icon
+                        name={item.icon}
+                        size={22}
+                        className={hasActiveChild ? 'text-white' : 'text-[#CDCEE6]'}
+                      />
+                      <span>{item.label}</span>
+                    </span>
+                    <Icon
+                      name={isExpanded ? 'chevron_down' : 'chevron_right'}
+                      size={18}
+                      className="text-[#CDCEE6] shrink-0"
+                    />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-3 pb-3 pt-1">
+                      <div className="ml-4 pl-3 border-l border-white/15 space-y-1">
+                        {item.children.map((subItem) => {
+                          if (!subItem.enabled) {
+                            return (
+                              <div
+                                key={subItem.href}
+                                aria-disabled="true"
+                                title="Próximamente"
+                                className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-[#9E9E9E]/60 cursor-not-allowed select-none"
+                              >
+                                <span>{subItem.label}</span>
+                              </div>
+                            );
+                          }
+
+                          const isSubActive = isRouteActive(subItem.href, pathname);
+
+                          return (
+                            <Link
+                              key={subItem.href}
+                              href={subItem.href}
+                              onClick={close}
+                              className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-all select-none ${
+                                isSubActive
+                                  ? 'bg-[#3F2581] text-white shadow-md font-semibold'
+                                  : 'text-[#E0E0E0] hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              <span>{subItem.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            if (!item.enabled) {
+              return (
+                <div
+                  key={item.href}
+                  aria-disabled="true"
+                  title="Próximamente"
+                  className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-base font-medium text-[#9E9E9E]/60 cursor-not-allowed select-none"
+                >
+                  <Icon
+                    name={item.icon}
+                    size={22}
+                    className="text-[#9E9E9E]/60"
+                  />
+                  <span>{item.label}</span>
+                </div>
+              );
+            }
+
+            const isActive = isRouteActive(item.href, pathname);
 
             return (
               <Link
