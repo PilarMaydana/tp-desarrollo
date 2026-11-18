@@ -23,11 +23,14 @@ import {
   Plus,
   Trash2,
   Check,
+  CheckSquare,
+  Puzzle,
   ChevronDown,
   ChevronRight,
   Filter,
   X,
   Sparkles,
+  FileQuestion,
   LucideProps,
 } from 'lucide-react';
 
@@ -47,12 +50,16 @@ export type IconName =
   | 'alternate_email'
   | 'work'
   | 'assignment'
+  | 'file_question'
   | 'bar_chart'
   | 'help_outline'
   | 'format_list_numbered'
   | 'plus'
   | 'trash'
   | 'check'
+  | 'check_square'
+  | 'puzzle'
+  | 'tune'
   | 'chevron_down'
   | 'chevron_right'
   | 'filter'
@@ -82,12 +89,16 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   alternate_email: AtSign,
   work: Briefcase,
   assignment: ClipboardList,
+  file_question: FileQuestion,
   bar_chart: BarChart3,
   help_outline: HelpCircle,
   format_list_numbered: ListOrdered,
   plus: Plus,
   trash: Trash2,
   check: Check,
+  check_square: CheckSquare,
+  puzzle: Puzzle,
+  tune: Puzzle,
   chevron_down: ChevronDown,
   chevron_right: ChevronRight,
   filter: Filter,

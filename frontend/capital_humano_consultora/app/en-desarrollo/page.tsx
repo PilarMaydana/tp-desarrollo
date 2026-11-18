@@ -10,7 +10,8 @@ import { ROUTES } from '@/constants/routes';
 
 function EnDesarrolloContent() {
   const searchParams = useSearchParams();
-  const modulo = searchParams.get('modulo') || 'Esta funcionalidad';
+  const moduloRaw = searchParams.get('modulo') || '';
+  const cleanModulo = moduloRaw.replace(/\s*\(?CU[-_\s]*\d+\)?/gi, '').trim();
 
   return (
     <DashboardLayout>
@@ -25,8 +26,13 @@ function EnDesarrolloContent() {
             Próximamente
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#3F2581]">
-            {modulo} en desarrollo
+            Funcionalidad en desarrollo
           </h1>
+          {cleanModulo && cleanModulo !== 'Esta funcionalidad' && (
+            <p className="text-sm font-semibold text-[#3F2581]">
+              {cleanModulo}
+            </p>
+          )}
           <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto leading-relaxed pt-1">
             Esta sección no forma parte de las funcionalidades activas de esta versión y se encuentra en proceso de implementación.
           </p>

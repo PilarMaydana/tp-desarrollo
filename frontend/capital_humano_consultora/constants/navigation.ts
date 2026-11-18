@@ -11,27 +11,33 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   // Rutas Consultor
   {
-    label: 'Evaluaciones',
-    href: ROUTES.CONSULTOR.EVALUACIONES,
-    icon: 'groups',
+    label: 'Puestos',
+    href: ROUTES.CONSULTOR.PUESTOS_NUEVO,
+    icon: 'work',
     roles: ['CONSULTOR'],
   },
   {
     label: 'Competencias',
     href: ROUTES.CONSULTOR.COMPETENCIAS,
-    icon: 'check',
+    icon: 'check_square',
     roles: ['CONSULTOR'],
   },
   {
-    label: 'Reportes',
-    href: ROUTES.CONSULTOR.REPORTES,
-    icon: 'bar_chart',
+    label: 'Factores',
+    href: ROUTES.CONSULTOR.FACTORES_NUEVO,
+    icon: 'puzzle',
     roles: ['CONSULTOR'],
   },
   {
     label: 'Preguntas',
     href: ROUTES.CONSULTOR.PREGUNTAS,
-    icon: 'help_outline',
+    icon: 'file_question',
+    roles: ['CONSULTOR'],
+  },
+  {
+    label: 'Evaluaciones',
+    href: ROUTES.CONSULTOR.EVALUACIONES,
+    icon: 'groups',
     roles: ['CONSULTOR'],
   },
   {
@@ -41,15 +47,9 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['CONSULTOR'],
   },
   {
-    label: 'Factores',
-    href: ROUTES.CONSULTOR.FACTORES_NUEVO,
-    icon: 'tune',
-    roles: ['CONSULTOR'],
-  },
-  {
-    label: 'Puestos',
-    href: ROUTES.CONSULTOR.PUESTOS_NUEVO,
-    icon: 'work',
+    label: 'Reportes',
+    href: ROUTES.CONSULTOR.REPORTES,
+    icon: 'bar_chart',
     roles: ['CONSULTOR'],
   },
   // Rutas Candidato
