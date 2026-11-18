@@ -107,9 +107,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
               return (
                 <div
                   key={item.label}
-                  className={`rounded-xl border transition-colors ${
+                  className={`rounded-xl border transition-colors bg-[#2E2E2E] ${
                     isExpanded
-                      ? 'bg-[#252525] border-white/10'
+                      ? 'border-white/10'
                       : 'border-transparent'
                   }`}
                 >
