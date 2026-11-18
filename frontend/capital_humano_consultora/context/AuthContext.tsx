@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { LoginCredentials, User, UserRole } from '@/types/auth';
+import { AuthResponseDTO, LoginCredentials, User, UserRole } from '@/types/auth';
 import { authService } from '@/services/authService';
 
 interface AuthContextType {
@@ -10,6 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  saveAuthResponse: (response: AuthResponseDTO, identifier: string) => void;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 }
@@ -23,6 +24,49 @@ const DEFAULT_DEMO_USER: User = {
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function resolveDisplayName(
+  role: UserRole,
+  identifier: string,
+  apiNombre?: string,
+  apiApellido?: string
+): string {
+  if (apiNombre && apiNombre.trim().length > 0) {
+    const rawFullName = apiApellido
+      ? `${apiNombre.trim()} ${apiApellido.trim()}`
+      : apiNombre.trim();
+    return toTitleCase(rawFullName);
+  }
+
+  const idUpper = identifier.trim().toUpperCase();
+
+  if (role === 'CONSULTOR') {
+    const NOMBRES_CONSULTORES: Record<string, string> = {
+      ADMIN: 'Administrador del Sistema',
+      LFERNANDEZ: 'Lucía Fernández',
+      CONSULTOR: 'Consultor General',
+      USER_TEST: 'Usuario de Prueba',
+    };
+    return NOMBRES_CONSULTORES[idUpper] || toTitleCase(identifier);
+  } else {
+    // Candidato: ÚNICAMENTE SU NOMBRE, NUNCA EL DNI
+    const NOMBRES_CANDIDATOS: Record<string, string> = {
+      '12345678': 'Juan Pérez',
+      '87654321': 'María Gómez',
+      '11223344': 'Carlos López',
+    };
+    return NOMBRES_CANDIDATOS[identifier.trim()] || 'Candidato';
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(DEFAULT_DEMO_USER);
@@ -48,6 +92,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const saveAuthResponse = (dto: AuthResponseDTO, identifier: string) => {
+    const displayName = resolveDisplayName(dto.rol, identifier, dto.nombre, dto.apellido);
+    const newUser: User = {
+      id: String(dto.usuarioId),
+      name: displayName,
+      username: identifier,
+      role: dto.rol,
+      cuestionarioId: dto.cuestionarioId,
+    };
+    authService.saveSession({ token: dto.token, user: newUser });
+    setUser(newUser);
   };
 
   const logout = () => {
@@ -90,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         isLoading,
         login,
+        saveAuthResponse,
         logout,
         switchRole,
       }}

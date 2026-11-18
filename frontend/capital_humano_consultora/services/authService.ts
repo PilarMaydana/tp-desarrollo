@@ -1,5 +1,12 @@
-import { AuthResponse, LoginCredentials, User } from '@/types/auth';
-import { apiFetch } from './apiClient';
+import {
+  AuthResponse,
+  AuthResponseDTO,
+  CandidatoLoginDTO,
+  ConsultorLoginDTO,
+  LoginCredentials,
+  User,
+} from '@/types/auth';
+import { cu001AuthService } from '@/features/cu001-autenticar-usuario/services/authService';
 
 const MOCK_CONSULTOR: User = {
   id: 'usr-1',
@@ -18,13 +25,52 @@ const MOCK_CANDIDATO: User = {
 };
 
 export const authService = {
+  /**
+   * Endpoint oficial CU001: Autenticación de Consultor
+   */
+  async loginConsultor(dto: ConsultorLoginDTO): Promise<AuthResponseDTO> {
+    return cu001AuthService.loginConsultor(dto);
+  },
+
+  /**
+   * Endpoint oficial CU001: Autenticación de Candidato
+   */
+  async loginCandidato(dto: CandidatoLoginDTO): Promise<AuthResponseDTO> {
+    return cu001AuthService.loginCandidato(dto);
+  },
+
+  /**
+   * Método legacy para compatibilidad con código anterior
+   */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      // Intento de conexión al backend Spring Boot
-      return await apiFetch<AuthResponse>('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(credentials),
-      });
+      if (credentials.role === 'CONSULTOR') {
+        const res = await this.loginConsultor({
+          usuario: credentials.username,
+          contrasena: credentials.clave,
+        });
+        const user: User = {
+          id: String(res.usuarioId),
+          name: credentials.username.toUpperCase(),
+          username: credentials.username.toUpperCase(),
+          role: res.rol,
+        };
+        return { token: res.token, user };
+      } else {
+        const res = await this.loginCandidato({
+          tipoDocumento: (credentials.tipoDocumento as 'DNI' | 'LE' | 'LC' | 'PP') || 'DNI',
+          numeroDocumento: credentials.nroDocumento || credentials.username,
+          clave: credentials.clave,
+        });
+        const user: User = {
+          id: String(res.usuarioId),
+          name: `Candidato (${credentials.nroDocumento || credentials.username})`,
+          username: credentials.nroDocumento || credentials.username,
+          role: res.rol,
+          cuestionarioId: res.cuestionarioId,
+        };
+        return { token: res.token, user };
+      }
     } catch {
       // Fallback para desarrollo offline / prototipo funcional
       const user = credentials.role === 'CONSULTOR' ? MOCK_CONSULTOR : MOCK_CANDIDATO;
@@ -51,6 +97,7 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
+      localStorage.removeItem('cuestionario_id');
     }
   },
 
@@ -58,6 +105,9 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.setItem('auth_token', authResponse.token);
       localStorage.setItem('auth_user', JSON.stringify(authResponse.user));
+      if (authResponse.user.cuestionarioId) {
+        localStorage.setItem('cuestionario_id', String(authResponse.user.cuestionarioId));
+      }
     }
   },
 };
