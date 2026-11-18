@@ -166,6 +166,30 @@ export const AltaPreguntaScreen: React.FC<AltaPreguntaScreenProps> = ({
             </NotchedField>
           </div>
 
+          {/* Sección de Contenido de la Pregunta con Asistente IA */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-gray-100">
+            <div>
+              <h2 className="text-base font-bold text-[#3F2581]">
+                Contenido de la Pregunta
+              </h2>
+              <p className="text-xs text-[#757575] mt-0.5">
+                Complete los datos de la pregunta o utilice la generación asistida con IA.
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              variant="secondary-soft"
+              onClick={handleOpenIaModal}
+              disabled={isSubmitting}
+              leftIcon="sparkles"
+              size="sm"
+              className="font-semibold text-[#3F2581] bg-[#F4F0FF] hover:bg-[#EADDFF] border border-[#D0BCFF] shadow-2xs whitespace-nowrap px-4 h-10 self-start sm:self-auto cursor-pointer"
+            >
+              Generar con IA
+            </Button>
+          </div>
+
           {/* Fila 2: Nombre de la Pregunta */}
           <NotchedField
             label="Nombre"
@@ -273,44 +297,28 @@ export const AltaPreguntaScreen: React.FC<AltaPreguntaScreenProps> = ({
             )}
           </div>
 
-          {/* Fila 6: Botones del Formulario con misma altura y texto en un renglón */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-100 mt-2">
-            {/* Botón «Generar con IA» con nowrap */}
+          {/* Fila 6: Botones Finales «Cancelar» y «Aceptar» */}
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100 mt-2">
             <Button
               type="button"
-              variant="secondary-soft"
-              onClick={handleOpenIaModal}
+              variant="secondary"
+              onClick={handleCancelar}
               disabled={isSubmitting}
-              leftIcon="sparkles"
               size="md"
-              className="font-semibold text-[#3F2581] bg-[#F3EDF7] hover:bg-[#E8DEF8] border-[#D0BCFF] whitespace-nowrap px-5 h-11"
+              className="w-full sm:w-32 font-semibold h-11 px-4 whitespace-nowrap"
             >
-              Generar con IA
+              Cancelar
             </Button>
 
-            {/* Botones «Cancelar» y «Aceptar» más angostos con la misma altura */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto justify-end">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleCancelar}
-                disabled={isSubmitting}
-                size="md"
-                className="w-full sm:w-32 font-semibold h-11 px-4 whitespace-nowrap"
-              >
-                Cancelar
-              </Button>
-
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={isSubmitting}
-                size="md"
-                className="w-full sm:w-32 font-semibold shadow-xs h-11 px-4 whitespace-nowrap"
-              >
-                Aceptar
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={isSubmitting}
+              size="md"
+              className="w-full sm:w-32 font-semibold shadow-xs h-11 px-4 whitespace-nowrap"
+            >
+              Aceptar
+            </Button>
           </div>
         </form>
       </div>

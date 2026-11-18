@@ -257,22 +257,8 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
               )}
             </div>
 
-            {/* Grupo de Botones de Acción Superior (CU 020 punto 1.2) */}
+            {/* Grupo de Botones de Acción Superior */}
             <div className="flex flex-wrap items-center gap-2 justify-end">
-              {/* Botón Generar con IA */}
-              <Button
-                type="button"
-                variant="secondary-soft"
-                onClick={() => {
-                  alert('Funcionalidad de Generación con IA en desarrollo');
-                }}
-                leftIcon="sparkles"
-                size="sm"
-                className="font-semibold text-[#3F2581] bg-[#F3EDF7] hover:bg-[#E8DEF8] border-[#D0BCFF]"
-              >
-                Generar con IA
-              </Button>
-
               {/* Botón Nuevo -> CU 021 */}
               <Button
                 type="button"

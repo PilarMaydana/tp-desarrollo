@@ -50,13 +50,13 @@ export const ModalGenerarConIA: React.FC<ModalGenerarConIAProps> = ({
         {/* Título y estado */}
         <div className="space-y-2">
           <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#F4F0FF] text-[#3F2581] border border-[#D0BCFF]">
-            Caso de Uso CU 033
+            Próximamente
           </div>
           <h2 id="modal-titulo-ia" className="text-xl font-bold text-[#3F2581]">
-            Generar Pregunta con IA
+            Funcionalidad en desarrollo
           </h2>
           <p className="text-sm text-gray-700 leading-relaxed">
-            El módulo <strong className="font-semibold text-[#3F2581]">CU 033 – Generar con IA</strong> se encuentra actualmente en desarrollo y permitirá formular reactivos psicométricos y criterios de ponderación automáticamente según la competencia y factor seleccionados.
+            La funcionalidad de <strong className="font-semibold text-[#3F2581]">Generación con IA</strong> se encuentra actualmente en desarrollo y permitirá formular reactivos psicométricos y criterios de ponderación automáticamente según la competencia y factor seleccionados.
           </p>
 
           {factorNombreSeleccionado ? (
