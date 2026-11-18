@@ -40,7 +40,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     type: 'group',
-    label: 'Configurar evaluaciones',
+    label: 'Configurar evaluación',
     icon: 'tune',
     roles: ['CONSULTOR'],
     children: [

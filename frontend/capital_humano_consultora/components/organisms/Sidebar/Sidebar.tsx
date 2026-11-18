@@ -99,9 +99,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
               const isGroupRoute = item.children.some((child) =>
                 isRouteActive(child.href, pathname)
               );
-              const hasActiveChild = item.children.some(
-                (child) => child.enabled && isRouteActive(child.href, pathname)
-              );
               const isExpanded =
                 manualToggle.pathname === pathname && item.label in manualToggle.groups
                   ? manualToggle.groups[item.label]
@@ -120,19 +117,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                     type="button"
                     aria-expanded={isExpanded}
                     onClick={() => handleToggleGroup(item.label, isExpanded)}
-                    className={`w-full flex items-center justify-between gap-3.5 px-4 py-3 rounded-xl text-base font-medium transition-all select-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#896ECB] ${
-                      hasActiveChild
-                        ? 'text-white font-semibold hover:bg-white/10'
-                        : 'text-[#E0E0E0] hover:bg-white/10 hover:text-white'
-                    }`}
+                    className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-base font-medium transition-all select-none cursor-pointer text-[#E0E0E0] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
                   >
-                    <span className="flex items-center gap-3.5">
+                    <span className="flex items-center gap-3.5 min-w-0">
                       <Icon
                         name={item.icon}
                         size={22}
-                        className={hasActiveChild ? 'text-white' : 'text-[#CDCEE6]'}
+                        className="text-[#CDCEE6] shrink-0"
                       />
-                      <span>{item.label}</span>
+                      <span className="whitespace-nowrap text-left">{item.label}</span>
                     </span>
                     <Icon
                       name={isExpanded ? 'chevron_down' : 'chevron_right'}
@@ -158,18 +151,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                             );
                           }
 
-                          const isSubActive = isRouteActive(subItem.href, pathname);
-
                           return (
                             <Link
                               key={subItem.href}
                               href={subItem.href}
                               onClick={close}
-                              className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-all select-none ${
-                                isSubActive
-                                  ? 'bg-[#3F2581] text-white shadow-md font-semibold'
-                                  : 'text-[#E0E0E0] hover:bg-white/10 hover:text-white'
-                              }`}
+                              className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-all select-none text-[#E0E0E0] hover:bg-white/10 hover:text-white"
                             >
                               <span>{subItem.label}</span>
                             </Link>
@@ -200,23 +187,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
               );
             }
 
-            const isActive = isRouteActive(item.href, pathname);
-
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={close}
-                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-base font-medium transition-all select-none ${
-                  isActive
-                    ? 'bg-[#3F2581] text-white shadow-md font-semibold'
-                    : 'text-[#E0E0E0] hover:bg-white/10 hover:text-white'
-                }`}
+                className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-base font-medium transition-all select-none text-[#E0E0E0] hover:bg-white/10 hover:text-white"
               >
                 <Icon
                   name={item.icon}
                   size={22}
-                  className={isActive ? 'text-white' : 'text-[#CDCEE6]'}
+                  className="text-[#CDCEE6]"
                 />
                 <span>{item.label}</span>
               </Link>
