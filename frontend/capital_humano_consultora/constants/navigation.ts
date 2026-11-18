@@ -39,6 +39,14 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['CONSULTOR'],
   },
   {
+    type: 'link',
+    label: 'Evaluaciones',
+    href: ROUTES.CONSULTOR.EVALUACIONES,
+    icon: 'groups',
+    enabled: true,
+    roles: ['CONSULTOR'],
+  },
+  {
     type: 'group',
     label: 'Configurar evaluación',
     icon: 'tune',
@@ -70,14 +78,6 @@ export const NAV_ITEMS: NavItem[] = [
         icon: 'assignment',
       },
     ],
-  },
-  {
-    type: 'link',
-    label: 'Evaluaciones',
-    href: ROUTES.CONSULTOR.EVALUACIONES,
-    icon: 'groups',
-    enabled: true,
-    roles: ['CONSULTOR'],
   },
   {
     type: 'link',

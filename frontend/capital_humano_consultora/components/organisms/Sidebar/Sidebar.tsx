@@ -107,11 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
               return (
                 <div
                   key={item.label}
-                  className={`rounded-xl border transition-colors bg-[#2E2E2E] ${
-                    isExpanded
-                      ? 'border-white/10'
-                      : 'border-transparent'
-                  }`}
+                  className="rounded-xl bg-[#2E2E2E]"
                 >
                   <button
                     type="button"
