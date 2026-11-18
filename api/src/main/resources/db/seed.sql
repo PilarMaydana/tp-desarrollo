@@ -34,7 +34,9 @@ INSERT INTO pregunta_opcion_respuesta (pregunta_id, nombre, descripcion, nro_ord
 
 INSERT INTO opcion_respuesta (nombre, descripcion) VALUES
     ('FRECUENCIA', 'ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO'),
-    ('ACUERDO', 'ESCALA DE GRADO DE ACUERDO CON LA AFIRMACIÓN');
+    ('ACUERDO', 'ESCALA DE GRADO DE ACUERDO CON LA AFIRMACIÓN'),
+    ('FRECUENCIA SEMANAL', 'ESCALA DE FRECUENCIA DE EJECUCIÓN SEMANAL DE TAREAS'),
+    ('SATISFACCIÓN', 'ESCALA DE NIVEL DE SATISFACCIÓN GENERAL');
 
 INSERT INTO item_opcion_respuesta (opcion_respuesta_id, orden, descripcion) VALUES
     (1, 1, 'NUNCA'),
@@ -42,4 +44,11 @@ INSERT INTO item_opcion_respuesta (opcion_respuesta_id, orden, descripcion) VALU
     (1, 3, 'SIEMPRE'),
     (2, 1, 'EN DESACUERDO'),
     (2, 2, 'NEUTRAL'),
-    (2, 3, 'DE ACUERDO');
+    (2, 3, 'DE ACUERDO'),
+    (3, 1, 'NINGUNA VEZ'),
+    (3, 2, 'UNA A DOS VECES'),
+    (3, 3, 'TRES O MÁS VECES'),
+    (4, 1, 'INSATISFECHO'),
+    (4, 2, 'NEUTRO'),
+    (4, 3, 'SATISFECHO'),
+    (4, 4, 'MUY SATISFECHO');
