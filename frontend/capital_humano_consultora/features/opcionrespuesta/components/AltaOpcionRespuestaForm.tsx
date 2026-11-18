@@ -69,34 +69,13 @@ export const AltaOpcionRespuestaForm: React.FC<AltaOpcionRespuestaFormProps> = (
       {/* Card principal con fondo blanco uniforme para los campos NotchedField */}
       <div className="bg-white rounded-2xl md:rounded-3xl border border-[#D0BCFF] shadow-xs p-6 sm:p-10 md:p-12 flex flex-col gap-8">
         {/* Cabecera de la pantalla */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col">
-            <h1 className="text-2xl md:text-3xl font-bold text-[#3F2581]">
-              Dar de Alta Opción de Respuesta
-            </h1>
-            <p className="text-sm text-[#757575] mt-1">
-              Crea una escala de valoración para asignar a preguntas y reactivos de evaluación.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#F4F0FF] border border-[#D0BCFF] flex items-center justify-center text-[#3F2581] shrink-0">
-                <Icon name="assignment" size={20} />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-[#3F2581]">
-                  Definición de Escala
-                </h2>
-                <p className="text-xs text-[#757575]">
-                  Ingresa los datos generales y los valores posibles de la escala.
-                </p>
-              </div>
-            </div>
-            <span className="text-xs font-medium text-[#757575]">
-              <span className="text-[#D32F2F] font-bold">*</span> Campos obligatorios
-            </span>
-          </div>
+        <div className="flex flex-col">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#3F2581]">
+            Dar de Alta Opción de Respuesta
+          </h1>
+          <p className="text-sm text-[#757575] mt-1">
+            Crea una escala de valoración para asignar a preguntas y reactivos de evaluación.
+          </p>
         </div>
 
         {/* Flujos Alternativos 2.B (409 Nombre existente) y 2.C/2.D (422 Regla de negocio) */}
