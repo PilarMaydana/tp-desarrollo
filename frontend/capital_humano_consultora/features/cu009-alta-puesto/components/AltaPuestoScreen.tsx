@@ -187,7 +187,7 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
         <div className="flex flex-col gap-2 pt-2">
           <div className="flex items-center justify-between">
             <label className="text-base font-bold text-[#3F2581] flex items-center gap-1">
-              <span>Características del puesto (Competencias)</span>
+              <span>Características del puesto</span>
               <span className="text-[#D32F2F]">*</span>
               {isLoadingCompetencias && (
                 <span className="text-xs font-normal text-purple-600 animate-pulse ml-2">
