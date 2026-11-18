@@ -48,22 +48,26 @@ export const NAV_ITEMS: NavItem[] = [
         label: 'Competencias',
         href: ROUTES.CONSULTOR.COMPETENCIAS,
         enabled: true,
+        icon: 'check_square',
       },
       {
         label: 'Factores',
         // TODO apuntar al listado cuando exista el CU de gestión de factores
         href: ROUTES.CONSULTOR.FACTORES_NUEVO,
         enabled: true,
+        icon: 'puzzle',
       },
       {
         label: 'Preguntas',
         href: ROUTES.CONSULTOR.PREGUNTAS,
         enabled: true,
+        icon: 'file_question',
       },
       {
         label: 'Opciones de respuesta',
         href: '/opciones-respuesta',
         enabled: false,
+        icon: 'assignment',
       },
     ],
   },

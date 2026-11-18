@@ -135,34 +135,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                   </button>
 
                   {isExpanded && (
-                    <div className="px-3 pb-3 pt-1">
-                      <div className="ml-4 pl-3 border-l border-white/15 space-y-1">
-                        {item.children.map((subItem) => {
-                          if (!subItem.enabled) {
-                            return (
-                              <div
-                                key={subItem.href}
-                                aria-disabled="true"
-                                title="Próximamente"
-                                className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-[#9E9E9E]/60 cursor-not-allowed select-none"
-                              >
-                                <span>{subItem.label}</span>
-                              </div>
-                            );
-                          }
-
+                    <div className="px-2 pb-2 pt-1 space-y-1">
+                      {item.children.map((subItem) => {
+                        if (!subItem.enabled) {
                           return (
-                            <Link
+                            <div
                               key={subItem.href}
-                              href={subItem.href}
-                              onClick={close}
-                              className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-all select-none text-[#E0E0E0] hover:bg-white/10 hover:text-white"
+                              aria-disabled="true"
+                              title="Próximamente"
+                              className="flex items-center gap-3 pl-6 pr-3 py-2 rounded-lg text-base font-medium text-[#9E9E9E]/60 cursor-not-allowed select-none"
                             >
+                              {subItem.icon && (
+                                <Icon
+                                  name={subItem.icon}
+                                  size={18}
+                                  className="text-[#9E9E9E]/60 shrink-0"
+                                />
+                              )}
                               <span>{subItem.label}</span>
-                            </Link>
+                            </div>
                           );
-                        })}
-                      </div>
+                        }
+
+                        return (
+                          <Link
+                            key={subItem.href}
+                            href={subItem.href}
+                            onClick={close}
+                            className="flex items-center gap-3 pl-6 pr-3 py-2 rounded-lg text-base font-medium transition-all select-none text-[#E0E0E0] hover:bg-white/10 hover:text-white"
+                          >
+                            {subItem.icon && (
+                              <Icon
+                                name={subItem.icon}
+                                size={18}
+                                className="text-[#CDCEE6] shrink-0"
+                              />
+                            )}
+                            <span>{subItem.label}</span>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
