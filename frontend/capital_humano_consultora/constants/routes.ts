@@ -20,6 +20,7 @@ export const ROUTES = {
     PUESTOS_NUEVO: '/puestos/nuevo',
     FACTORES: '/factores/nuevo',
     FACTORES_NUEVO: '/factores/nuevo',
+    OPCIONES_RESPUESTA_NUEVA: '/opciones-respuesta/nueva',
   },
   CANDIDATO: {
     CUESTIONARIO: '/en-desarrollo?modulo=Cuestionario+del+Candidato',
