@@ -2,8 +2,10 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.controller;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.ItemOpcionRespuestaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.OpcionRespuestaDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.OpcionRespuestaResumenDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.gestor.GestorOpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.web.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,12 +26,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Tests para {@link OpcionRespuestaController} utilizando MockMvc (CU 029).
+ * Tests para {@link OpcionRespuestaController} utilizando MockMvc (CU 024 / CU 029).
  */
 @ExtendWith(MockitoExtension.class)
 class OpcionRespuestaControllerTest {
@@ -204,6 +207,125 @@ class OpcionRespuestaControllerTest {
                 .andExpect(jsonPath("$.codigo").value("REGLA_NEGOCIO"))
                 .andExpect(jsonPath("$.mensaje").value("El orden de visualización de los ítems debe ser consecutivo desde 1 hasta 2 sin huecos (falta el orden 2)"))
                 .andExpect(jsonPath("$.path").value("/api/opciones-respuesta"));
+    }
+
+    @Test
+    @DisplayName("GET /api/opciones-respuesta?nombre=frecuencia retorna HTTP 200 OK con lista de resúmenes filtrada")
+    void buscarOpcionesRespuesta_conFiltro200() throws Exception {
+        List<OpcionRespuestaResumenDTO> respuesta = List.of(
+                new OpcionRespuestaResumenDTO(1L, "FRECUENCIA", "ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO"),
+                new OpcionRespuestaResumenDTO(3L, "FRECUENCIA SEMANAL", "ESCALA DE FRECUENCIA DE EJECUCIÓN SEMANAL DE TAREAS")
+        );
+
+        when(gestorOpcionRespuesta.buscarOpcionesRespuesta("frecuencia")).thenReturn(respuesta);
+
+        mockMvc.perform(get("/api/opciones-respuesta")
+                        .param("nombre", "frecuencia")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].nombre").value("FRECUENCIA"))
+                .andExpect(jsonPath("$[0].descripcion").value("ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO"))
+                .andExpect(jsonPath("$[0].items").doesNotExist())
+                .andExpect(jsonPath("$[1].id").value(3))
+                .andExpect(jsonPath("$[1].nombre").value("FRECUENCIA SEMANAL"))
+                .andExpect(jsonPath("$[1].descripcion").value("ESCALA DE FRECUENCIA DE EJECUCIÓN SEMANAL DE TAREAS"))
+                .andExpect(jsonPath("$[1].items").doesNotExist());
+
+        verify(gestorOpcionRespuesta).buscarOpcionesRespuesta("frecuencia");
+    }
+
+    @Test
+    @DisplayName("GET /api/opciones-respuesta sin filtro retorna HTTP 200 OK con todas las opciones de respuesta")
+    void buscarOpcionesRespuesta_sinFiltro200() throws Exception {
+        List<OpcionRespuestaResumenDTO> respuesta = List.of(
+                new OpcionRespuestaResumenDTO(2L, "ACUERDO", "ESCALA DE GRADO DE ACUERDO CON LA AFIRMACIÓN"),
+                new OpcionRespuestaResumenDTO(1L, "FRECUENCIA", "ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO"),
+                new OpcionRespuestaResumenDTO(3L, "FRECUENCIA SEMANAL", "ESCALA DE FRECUENCIA DE EJECUCIÓN SEMANAL DE TAREAS"),
+                new OpcionRespuestaResumenDTO(4L, "SATISFACCIÓN", "ESCALA DE NIVEL DE SATISFACCIÓN GENERAL")
+        );
+
+        when(gestorOpcionRespuesta.buscarOpcionesRespuesta(null)).thenReturn(respuesta);
+
+        mockMvc.perform(get("/api/opciones-respuesta")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[0].id").value(2))
+                .andExpect(jsonPath("$[0].nombre").value("ACUERDO"))
+                .andExpect(jsonPath("$[1].id").value(1))
+                .andExpect(jsonPath("$[1].nombre").value("FRECUENCIA"))
+                .andExpect(jsonPath("$[2].id").value(3))
+                .andExpect(jsonPath("$[2].nombre").value("FRECUENCIA SEMANAL"))
+                .andExpect(jsonPath("$[3].id").value(4))
+                .andExpect(jsonPath("$[3].nombre").value("SATISFACCIÓN"));
+
+        verify(gestorOpcionRespuesta).buscarOpcionesRespuesta(null);
+    }
+
+    @Test
+    @DisplayName("GET /api/opciones-respuesta sin coincidencias retorna HTTP 200 OK con lista vacía")
+    void buscarOpcionesRespuesta_listaVacia200() throws Exception {
+        when(gestorOpcionRespuesta.buscarOpcionesRespuesta("inexistente")).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/opciones-respuesta")
+                        .param("nombre", "inexistente")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(gestorOpcionRespuesta).buscarOpcionesRespuesta("inexistente");
+    }
+
+    @Test
+    @DisplayName("GET /api/opciones-respuesta/{id} existente retorna HTTP 200 OK con detalle e ítems ordenados")
+    void obtenerOpcionRespuestaPorId_existente200() throws Exception {
+        OpcionRespuestaDTO detalle = new OpcionRespuestaDTO(
+                1L,
+                "FRECUENCIA",
+                "ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO",
+                List.of(
+                        new ItemOpcionRespuestaDTO(1, "NUNCA"),
+                        new ItemOpcionRespuestaDTO(2, "A VECES"),
+                        new ItemOpcionRespuestaDTO(3, "SIEMPRE")
+                )
+        );
+
+        when(gestorOpcionRespuesta.obtenerPorId(1L)).thenReturn(detalle);
+
+        mockMvc.perform(get("/api/opciones-respuesta/1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nombre").value("FRECUENCIA"))
+                .andExpect(jsonPath("$.descripcion").value("ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO"))
+                .andExpect(jsonPath("$.items", hasSize(3)))
+                .andExpect(jsonPath("$.items[0].orden").value(1))
+                .andExpect(jsonPath("$.items[0].descripcion").value("NUNCA"))
+                .andExpect(jsonPath("$.items[1].orden").value(2))
+                .andExpect(jsonPath("$.items[1].descripcion").value("A VECES"))
+                .andExpect(jsonPath("$.items[2].orden").value(3))
+                .andExpect(jsonPath("$.items[2].descripcion").value("SIEMPRE"));
+
+        verify(gestorOpcionRespuesta).obtenerPorId(1L);
+    }
+
+    @Test
+    @DisplayName("GET /api/opciones-respuesta/{id} inexistente retorna HTTP 404 Not Found con ApiError RECURSO_NO_ENCONTRADO")
+    void obtenerOpcionRespuestaPorId_inexistente404() throws Exception {
+        when(gestorOpcionRespuesta.obtenerPorId(99L))
+                .thenThrow(new RecursoNoEncontradoException("Opción de respuesta", 99L));
+
+        mockMvc.perform(get("/api/opciones-respuesta/99")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.codigo").value("RECURSO_NO_ENCONTRADO"))
+                .andExpect(jsonPath("$.mensaje").value("Opción de respuesta con id 99 no existe"))
+                .andExpect(jsonPath("$.path").value("/api/opciones-respuesta/99"));
+
+        verify(gestorOpcionRespuesta).obtenerPorId(99L);
     }
 }
 

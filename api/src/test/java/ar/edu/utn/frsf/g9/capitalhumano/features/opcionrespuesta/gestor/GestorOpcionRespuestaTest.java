@@ -3,8 +3,11 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.gestor;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dao.OpcionRespuestaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.ItemOpcionRespuestaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.OpcionRespuestaDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.OpcionRespuestaResumenDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.model.ItemOpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.model.OpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,16 +18,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests unitarios para {@link GestorOpcionRespuesta} (CU 029).
+ * Tests unitarios para {@link GestorOpcionRespuesta} (CU 024 / CU 029).
  */
 @ExtendWith(MockitoExtension.class)
 class GestorOpcionRespuestaTest {
@@ -299,6 +304,114 @@ class GestorOpcionRespuestaTest {
                 .hasMessageContaining("duplicada");
 
         verify(opcionRespuestaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CU 024 - Búsqueda con texto: normaliza a mayúsculas y trim, y devuelve lista de resúmenes ordenada")
+    void buscarOpcionesRespuesta_conTexto_normalizaMayusculasYTrim() {
+        OpcionRespuesta op1 = new OpcionRespuesta(1L, "FRECUENCIA", "ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO");
+        OpcionRespuesta op2 = new OpcionRespuesta(3L, "FRECUENCIA SEMANAL", "ESCALA DE FRECUENCIA DE EJECUCIÓN SEMANAL DE TAREAS");
+
+        when(opcionRespuestaDAO.findByNombreContainingIgnoreCaseOrderByNombreAsc("FRECUENCIA"))
+                .thenReturn(List.of(op1, op2));
+
+        List<OpcionRespuestaResumenDTO> resultados = gestorOpcionRespuesta.buscarOpcionesRespuesta("   frecuencia   ");
+
+        assertThat(resultados).hasSize(2);
+        assertThat(resultados.get(0).getId()).isEqualTo(1L);
+        assertThat(resultados.get(0).getNombre()).isEqualTo("FRECUENCIA");
+        assertThat(resultados.get(0).getDescripcion()).isEqualTo("ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO");
+        assertThat(resultados.get(1).getId()).isEqualTo(3L);
+        assertThat(resultados.get(1).getNombre()).isEqualTo("FRECUENCIA SEMANAL");
+        assertThat(resultados.get(1).getDescripcion()).isEqualTo("ESCALA DE FRECUENCIA DE EJECUCIÓN SEMANAL DE TAREAS");
+
+        verify(opcionRespuestaDAO).findByNombreContainingIgnoreCaseOrderByNombreAsc("FRECUENCIA");
+        verify(opcionRespuestaDAO, never()).findAllByOrderByNombreAsc();
+    }
+
+    @Test
+    @DisplayName("CU 024 - Búsqueda sin texto o en blanco: devuelve todas las opciones de respuesta ordenadas por nombre")
+    void buscarOpcionesRespuesta_sinTextoOBlanco_devuelveTodas() {
+        OpcionRespuesta op1 = new OpcionRespuesta(2L, "ACUERDO", "ESCALA DE GRADO DE ACUERDO CON LA AFIRMACIÓN");
+        OpcionRespuesta op2 = new OpcionRespuesta(1L, "FRECUENCIA", "ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO");
+
+        when(opcionRespuestaDAO.findAllByOrderByNombreAsc()).thenReturn(List.of(op1, op2));
+
+        List<OpcionRespuestaResumenDTO> resNull = gestorOpcionRespuesta.buscarOpcionesRespuesta(null);
+        List<OpcionRespuestaResumenDTO> resVacio = gestorOpcionRespuesta.buscarOpcionesRespuesta("");
+        List<OpcionRespuestaResumenDTO> resBlanco = gestorOpcionRespuesta.buscarOpcionesRespuesta("   ");
+
+        assertThat(resNull).hasSize(2);
+        assertThat(resNull.get(0).getNombre()).isEqualTo("ACUERDO");
+        assertThat(resNull.get(1).getNombre()).isEqualTo("FRECUENCIA");
+        assertThat(resVacio).hasSize(2);
+        assertThat(resBlanco).hasSize(2);
+
+        verify(opcionRespuestaDAO, times(3)).findAllByOrderByNombreAsc();
+        verify(opcionRespuestaDAO, never()).findByNombreContainingIgnoreCaseOrderByNombreAsc(any());
+    }
+
+    @Test
+    @DisplayName("CU 024 - Búsqueda sin coincidencias: devuelve lista vacía sin lanzar error")
+    void buscarOpcionesRespuesta_sinCoincidencias_devuelveListaVacia() {
+        when(opcionRespuestaDAO.findByNombreContainingIgnoreCaseOrderByNombreAsc("INEXISTENTE"))
+                .thenReturn(List.of());
+
+        List<OpcionRespuestaResumenDTO> resultados = gestorOpcionRespuesta.buscarOpcionesRespuesta("inexistente");
+
+        assertThat(resultados).isNotNull().isEmpty();
+        verify(opcionRespuestaDAO).findByNombreContainingIgnoreCaseOrderByNombreAsc("INEXISTENTE");
+    }
+
+    @Test
+    @DisplayName("CU 024 - Búsqueda con caracteres % y _: los delega normalizados al método derivado Containing del DAO para que se traten como literales")
+    void buscarOpcionesRespuesta_conCaracteresEspecialesLike_delegaLiteralAlDao() {
+        when(opcionRespuestaDAO.findByNombreContainingIgnoreCaseOrderByNombreAsc("ESCALA_100%"))
+                .thenReturn(List.of());
+
+        List<OpcionRespuestaResumenDTO> resultados = gestorOpcionRespuesta.buscarOpcionesRespuesta("  escala_100%  ");
+
+        assertThat(resultados).isEmpty();
+        verify(opcionRespuestaDAO).findByNombreContainingIgnoreCaseOrderByNombreAsc("ESCALA_100%");
+    }
+
+    @Test
+    @DisplayName("CU 024 - Detalle por ID existente: devuelve DTO con sus ítems ordenados por orden ascendente")
+    void obtenerPorId_existente_devuelveDetalleConItemsOrdenados() {
+        OpcionRespuesta entidad = new OpcionRespuesta(1L, "FRECUENCIA", "ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO");
+        entidad.addItem(new ItemOpcionRespuesta(2, "A VECES"));
+        entidad.addItem(new ItemOpcionRespuesta(1, "NUNCA"));
+        entidad.addItem(new ItemOpcionRespuesta(3, "SIEMPRE"));
+
+        when(opcionRespuestaDAO.findById(1L)).thenReturn(Optional.of(entidad));
+
+        OpcionRespuestaDTO resultado = gestorOpcionRespuesta.obtenerPorId(1L);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getId()).isEqualTo(1L);
+        assertThat(resultado.getNombre()).isEqualTo("FRECUENCIA");
+        assertThat(resultado.getDescripcion()).isEqualTo("ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO");
+        assertThat(resultado.getItems()).hasSize(3);
+        assertThat(resultado.getItems().get(0).getOrden()).isEqualTo(1);
+        assertThat(resultado.getItems().get(0).getDescripcion()).isEqualTo("NUNCA");
+        assertThat(resultado.getItems().get(1).getOrden()).isEqualTo(2);
+        assertThat(resultado.getItems().get(1).getDescripcion()).isEqualTo("A VECES");
+        assertThat(resultado.getItems().get(2).getOrden()).isEqualTo(3);
+        assertThat(resultado.getItems().get(2).getDescripcion()).isEqualTo("SIEMPRE");
+
+        verify(opcionRespuestaDAO).findById(1L);
+    }
+
+    @Test
+    @DisplayName("CU 024 - Detalle por ID inexistente: lanza RecursoNoEncontradoException (404)")
+    void obtenerPorId_inexistente_lanzaRecursoNoEncontradoException() {
+        when(opcionRespuestaDAO.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> gestorOpcionRespuesta.obtenerPorId(99L))
+                .isInstanceOf(RecursoNoEncontradoException.class)
+                .hasMessage("Opción de respuesta con id 99 no existe");
+
+        verify(opcionRespuestaDAO).findById(99L);
     }
 }
 
