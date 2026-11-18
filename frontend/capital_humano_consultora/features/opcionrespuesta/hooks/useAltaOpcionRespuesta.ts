@@ -238,8 +238,7 @@ export function useAltaOpcionRespuesta(
       onSuccessNavigate();
       return;
     }
-    // TODO apuntar al listado cuando exista
-    router.push('/');
+    router.push('/opciones-respuesta?nombre=');
   }, [onSuccessNavigate, router]);
 
   const handleCancel = useCallback(() => {
