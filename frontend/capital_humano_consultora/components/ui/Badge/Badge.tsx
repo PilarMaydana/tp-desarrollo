@@ -10,7 +10,16 @@ export interface BadgeProps {
 }
 
 export const Badge: React.FC<BadgeProps> = ({ status, label, className = '' }) => {
-  const configs: Record<EstadoEvaluacion, { defaultText: string; bgClass: string; textClass: string; borderClass: string }> = {
+  const configs: Record<
+    EstadoEvaluacion,
+    { defaultText: string; bgClass: string; textClass: string; borderClass: string }
+  > = {
+    active: {
+      defaultText: 'Estado: activo',
+      bgClass: 'bg-[#EADDFF]',
+      textClass: 'text-[#3F2581]',
+      borderClass: 'border-[#D0BCFF]',
+    },
     'in-progress': {
       defaultText: 'Estado: en proceso',
       bgClass: 'bg-[#E8F5E9]',
@@ -31,7 +40,7 @@ export const Badge: React.FC<BadgeProps> = ({ status, label, className = '' }) =
     },
   };
 
-  const current = configs[status] || configs['finished'];
+  const current = configs[status] || configs['active'];
 
   return (
     <span

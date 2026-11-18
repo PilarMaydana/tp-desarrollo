@@ -32,6 +32,8 @@ import {
   X,
   Sparkles,
   FileQuestion,
+  Timer,
+  Clock,
   LucideProps,
 } from 'lucide-react';
 
@@ -66,7 +68,10 @@ export type IconName =
   | 'filter'
   | 'close'
   | 'sparkles'
-  | 'auto_awesome';
+  | 'auto_awesome'
+  | 'timer'
+  | 'schedule'
+  | 'clock';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName | string;
@@ -106,6 +111,9 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   close: X,
   sparkles: Sparkles,
   auto_awesome: Sparkles,
+  timer: Timer,
+  schedule: Clock,
+  clock: Clock,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, size = 20, className = '', ...props }) => {

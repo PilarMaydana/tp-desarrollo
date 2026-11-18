@@ -1,4 +1,4 @@
-export type EstadoEvaluacion = 'in-progress' | 'finished' | 'expired';
+export type EstadoEvaluacion = 'active' | 'in-progress' | 'finished' | 'expired';
 
 export interface Evaluacion {
   id: string;
