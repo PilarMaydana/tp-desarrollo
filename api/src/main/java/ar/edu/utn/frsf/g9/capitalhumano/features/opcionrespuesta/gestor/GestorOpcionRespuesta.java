@@ -3,9 +3,11 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.gestor;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dao.OpcionRespuestaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.ItemOpcionRespuestaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.OpcionRespuestaDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.dto.OpcionRespuestaResumenDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.model.ItemOpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.features.opcionrespuesta.model.OpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +22,7 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Gestor de lógica de negocio para el alta de Opciones de Respuesta (CU 029).
+ * Gestor de lógica de negocio para la gestión y alta de Opciones de Respuesta (CU 024 / CU 029).
  */
 @Service
 public class GestorOpcionRespuesta {
@@ -130,6 +132,59 @@ public class GestorOpcionRespuesta {
         log.info("Opción de respuesta creada exitosamente con ID {} y nombre '{}'", guardada.getId(), guardada.getNombre());
 
         return aDTO(guardada);
+    }
+
+    /**
+     * Busca y lista opciones de respuesta aplicando criterio «contiene» sobre el nombre (CU 024).
+     *
+     * <p>Si el parámetro {@code nombre} es {@code null} o está vacío/en blanco luego de aplicar
+     * {@code trim()}, retorna todas las opciones de respuesta registradas. En caso contrario,
+     * normaliza el criterio aplicando {@code trim()} y {@code toUpperCase(Locale.ROOT)} antes de
+     * consultar al DAO. En ambos casos el resultado se devuelve ordenado por nombre ascendente
+     * en formato de resumen (sin los ítems).</p>
+     *
+     * @param nombre texto opcional a buscar dentro del nombre de la opción de respuesta
+     * @return lista de {@link OpcionRespuestaResumenDTO} ordenada por nombre ascendente (vacía si no hay coincidencias)
+     */
+    @Transactional(readOnly = true)
+    public List<OpcionRespuestaResumenDTO> buscarOpcionesRespuesta(String nombre) {
+        String filtro = nombre != null ? nombre.trim().toUpperCase(Locale.ROOT) : "";
+
+        List<OpcionRespuesta> resultados;
+        if (filtro.isBlank()) {
+            log.info("Listando todas las opciones de respuesta ordenadas por nombre ascendente");
+            resultados = opcionRespuestaDAO.findAllByOrderByNombreAsc();
+        } else {
+            log.info("Buscando opciones de respuesta cuyo nombre contenga '{}'", filtro);
+            resultados = opcionRespuestaDAO.findByNombreContainingIgnoreCaseOrderByNombreAsc(filtro);
+        }
+
+        return resultados.stream()
+                .map(this::aResumenDTO)
+                .toList();
+    }
+
+    /**
+     * Obtiene el detalle completo de una opción de respuesta por su ID, incluyendo sus ítems
+     * ordenados por orden de visualización ascendente (CU 024 - Paso 5).
+     *
+     * @param id identificador único de la opción de respuesta
+     * @return {@link OpcionRespuestaDTO} con los datos de la opción y su lista de ítems
+     * @throws RecursoNoEncontradoException si no existe una opción de respuesta con el ID indicado (404)
+     */
+    @Transactional(readOnly = true)
+    public OpcionRespuestaDTO obtenerPorId(Long id) {
+        OpcionRespuesta entidad = opcionRespuestaDAO.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Opción de respuesta", id));
+        return aDTO(entidad);
+    }
+
+    private OpcionRespuestaResumenDTO aResumenDTO(OpcionRespuesta entidad) {
+        return new OpcionRespuestaResumenDTO(
+                entidad.getId(),
+                entidad.getNombre(),
+                entidad.getDescripcion()
+        );
     }
 
     private OpcionRespuestaDTO aDTO(OpcionRespuesta entidad) {
