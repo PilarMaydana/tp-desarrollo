@@ -73,8 +73,8 @@ export const NAV_ITEMS: NavItem[] = [
       },
       {
         label: 'Opciones de respuesta',
-        href: '/opciones-respuesta',
-        enabled: false,
+        href: ROUTES.CONSULTOR.OPCIONES_RESPUESTA,
+        enabled: true,
         icon: 'assignment',
       },
     ],
