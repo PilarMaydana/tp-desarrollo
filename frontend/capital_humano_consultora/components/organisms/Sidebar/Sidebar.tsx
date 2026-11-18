@@ -68,9 +68,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
       {/* Drawer lateral */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-[#2E2E2E] text-white z-40 transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${className}`}
+        className={`fixed top-0 left-0 h-full w-72 bg-[#2E2E2E] text-white z-40 transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } ${className}`}
       >
         {/* Cabecera del Sidebar */}
         <div className="h-20 flex items-center justify-between px-6 bg-[#252525] border-b border-white/10">
