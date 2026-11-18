@@ -1,17 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { GestionarOpcionesRespuestaScreen } from '@/features/opcionrespuesta';
 
 export default function DevSandboxPage() {
   return (
     <DashboardLayout>
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border border-gray-200 max-w-lg mx-auto mt-12">
-        <h1 className="text-2xl font-bold text-[#3F2581] mb-2">Ruta Sandbox de Desarrollo</h1>
-        <p className="text-sm text-gray-600">
-          El sandbox se encuentra actualmente libre y disponible para el desarrollo aislado del próximo caso de uso.
-        </p>
-      </div>
+      <Suspense
+        fallback={
+          <div className="w-full flex items-center justify-center p-12">
+            <div className="w-8 h-8 border-3 border-[#3F2581] border-t-transparent rounded-full animate-spin" />
+          </div>
+        }
+      >
+        <GestionarOpcionesRespuestaScreen />
+      </Suspense>
     </DashboardLayout>
   );
 }

@@ -23,6 +23,12 @@ export interface OpcionRespuestaResponse {
   items: ItemOpcionRespuestaResponse[];
 }
 
+export interface OpcionRespuestaResumen {
+  id: number;
+  nombre: string;
+  descripcion: string;
+}
+
 export interface CampoError {
   campo: string;
   mensaje: string;

@@ -2,9 +2,27 @@ import { apiFetch, ApiError } from '@/services/apiClient';
 import {
   OpcionRespuestaCreateRequest,
   OpcionRespuestaResponse,
+  OpcionRespuestaResumen,
 } from '../types';
 
 export const opcionRespuestaService = {
+  /**
+   * Busca y lista opciones de respuesta aplicando criterio «contiene» sobre el nombre (GET /api/opciones-respuesta?nombre={texto} - CU 024).
+   * Si nombre está vacío o no se envía, el backend retorna todas las opciones de respuesta ordenadas por nombre.
+   */
+  async buscarOpcionesRespuesta(
+    nombre?: string
+  ): Promise<OpcionRespuestaResumen[]> {
+    const params: Record<string, string> = {};
+    if (nombre !== undefined && nombre.trim() !== '') {
+      params.nombre = nombre.trim();
+    }
+    return await apiFetch<OpcionRespuestaResumen[]>('/opciones-respuesta', {
+      method: 'GET',
+      params,
+    });
+  },
+
   /**
    * Da de alta una nueva opción de respuesta con su lista de ítems (POST /api/opciones-respuesta - CU 029).
    * Propaga errores HTTP reales (400 con detalles[], 409 conflicto, 422 regla de negocio, 500/red) sin silenciarlos.
