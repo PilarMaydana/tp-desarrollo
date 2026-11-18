@@ -67,11 +67,11 @@ public class AuthService {
             throw new AutenticacionException(ERROR_CONSULTOR);
         }
 
-        Long usuarioId = 1L; // ID representativo del consultor
+        Long usuarioId = 1L; // ID representativo de la consultora
         String token = jwtTokenService.generarTokenConsultor(usuarioNormalizado, usuarioId);
 
-        String nombre = "ADMIN".equals(usuarioNormalizado) ? "Administrador" : "Lucía";
-        String apellido = "ADMIN".equals(usuarioNormalizado) ? "del Sistema" : "Fernández";
+        String nombre = "Lucía";
+        String apellido = "Fernández";
 
         log.info("Consultor '{}' autenticado correctamente con ID {}", usuarioNormalizado, usuarioId);
         return AuthResponseDTO.paraConsultor(token, usuarioId, nombre, apellido);

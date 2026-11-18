@@ -21,12 +21,10 @@ public class MockLdapAuthStrategy implements ILdapAuthStrategy {
 
     /**
      * Diccionario de credenciales predefinidas (USUARIO_MAYUSCULAS -> CONTRASEÑA).
+     * Se utiliza exclusivamente a la consultora Lucía Fernández para fines de auditoría nominativa.
      */
     private static final Map<String, String> CREDENCIALES_VALIDAS = Map.of(
-            "ADMIN", "admin123",
-            "CONSULTOR", "consultor123",
-            "LFERNANDEZ", "admin123",
-            "USER_TEST", "pass123"
+            "LFERNANDEZ", "admin123"
     );
 
     @Override

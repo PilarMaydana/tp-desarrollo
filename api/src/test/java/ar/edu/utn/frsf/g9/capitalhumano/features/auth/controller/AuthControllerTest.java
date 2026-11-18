@@ -46,12 +46,12 @@ class AuthControllerTest {
         @Test
         @DisplayName("POST /api/auth/consultor exitoso retorna HTTP 200 y AuthResponseDTO")
         void autenticarConsultor_exitoso() throws Exception {
-            AuthResponseDTO dto = AuthResponseDTO.paraConsultor("mock-jwt-token-consultor", 1L);
+            AuthResponseDTO dto = AuthResponseDTO.paraConsultor("mock-jwt-token-consultor", 1L, "Lucía", "Fernández");
             when(authService.autenticarConsultor(any(ConsultorLoginRequestDTO.class))).thenReturn(dto);
 
             String requestBody = """
                     {
-                      "usuario": "ADMIN",
+                      "usuario": "LFERNANDEZ",
                       "contrasena": "admin123"
                     }
                     """;
@@ -62,7 +62,9 @@ class AuthControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.token").value("mock-jwt-token-consultor"))
                     .andExpect(jsonPath("$.rol").value("CONSULTOR"))
-                    .andExpect(jsonPath("$.usuarioId").value(1L));
+                    .andExpect(jsonPath("$.usuarioId").value(1L))
+                    .andExpect(jsonPath("$.nombre").value("Lucía"))
+                    .andExpect(jsonPath("$.apellido").value("Fernández"));
         }
 
         @Test

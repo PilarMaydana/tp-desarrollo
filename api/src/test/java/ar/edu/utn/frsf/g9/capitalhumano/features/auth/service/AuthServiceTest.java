@@ -57,8 +57,8 @@ class AuthServiceTest {
         @Test
         @DisplayName("Autenticación exitosa retorna token, ID de usuario y rol CONSULTOR")
         void autenticarConsultor_exitoso() {
-            ConsultorLoginRequestDTO request = new ConsultorLoginRequestDTO("ADMIN", "admin123");
-            when(ldapAuthStrategy.authenticate("ADMIN", "admin123")).thenReturn(true);
+            ConsultorLoginRequestDTO request = new ConsultorLoginRequestDTO("LFERNANDEZ", "admin123");
+            when(ldapAuthStrategy.authenticate("LFERNANDEZ", "admin123")).thenReturn(true);
 
             AuthResponseDTO response = authService.autenticarConsultor(request);
 
@@ -66,8 +66,10 @@ class AuthServiceTest {
             assertThat(response.getToken()).isNotBlank();
             assertThat(response.getRol()).isEqualTo("CONSULTOR");
             assertThat(response.getUsuarioId()).isEqualTo(1L);
+            assertThat(response.getNombre()).isEqualTo("Lucía");
+            assertThat(response.getApellido()).isEqualTo("Fernández");
             assertThat(response.getCuestionarioId()).isNull();
-            verify(ldapAuthStrategy).authenticate("ADMIN", "admin123");
+            verify(ldapAuthStrategy).authenticate("LFERNANDEZ", "admin123");
         }
 
         @Test
@@ -86,8 +88,8 @@ class AuthServiceTest {
         @Test
         @DisplayName("Flujo alternativo 5.A: Credenciales inválidas lanzan AutenticacionException con mensaje exacto")
         void autenticarConsultor_credencialesInvalidas_lanzaExcepcion() {
-            ConsultorLoginRequestDTO request = new ConsultorLoginRequestDTO("ADMIN", "wrongpass");
-            when(ldapAuthStrategy.authenticate("ADMIN", "wrongpass")).thenReturn(false);
+            ConsultorLoginRequestDTO request = new ConsultorLoginRequestDTO("LFERNANDEZ", "wrongpass");
+            when(ldapAuthStrategy.authenticate("LFERNANDEZ", "wrongpass")).thenReturn(false);
 
             assertThatThrownBy(() -> authService.autenticarConsultor(request))
                     .isInstanceOf(AutenticacionException.class)

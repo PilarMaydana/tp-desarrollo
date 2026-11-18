@@ -43,10 +43,7 @@ function resolveDisplayName(
 
   if (role === 'CONSULTOR') {
     const NOMBRES_CONSULTORES: Record<string, string> = {
-      ADMIN: 'Administrador del Sistema',
       LFERNANDEZ: 'Lucía Fernández',
-      CONSULTOR: 'Consultor General',
-      USER_TEST: 'Usuario de Prueba',
     };
     return NOMBRES_CONSULTORES[idUpper] || toTitleCase(identifier);
   } else {

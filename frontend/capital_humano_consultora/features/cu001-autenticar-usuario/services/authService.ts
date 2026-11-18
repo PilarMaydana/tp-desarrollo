@@ -97,23 +97,11 @@ export const cu001AuthService = {
       string,
       { pass: string; id: number; nombre: string; apellido: string }
     > = {
-      ADMIN: {
-        pass: 'admin123',
-        id: 1,
-        nombre: 'Administrador',
-        apellido: 'del Sistema',
-      },
       LFERNANDEZ: {
         pass: 'admin123',
-        id: 2,
+        id: 1,
         nombre: 'Lucía',
         apellido: 'Fernández',
-      },
-      CONSULTOR: {
-        pass: 'consultor123',
-        id: 3,
-        nombre: 'Consultor',
-        apellido: 'General',
       },
     };
 
