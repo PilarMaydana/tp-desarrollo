@@ -20,6 +20,8 @@ export interface OpcionRespuestaItem {
   nombre: string;
   descripcion: string;
   ponderacion: number;
+  /** Valor textual controlado opcional (permite entradas vacías o sin truncado automático, ej. CU 022). */
+  ponderacionInput?: string;
 }
 
 export interface PlantillaOpcionRespuesta {

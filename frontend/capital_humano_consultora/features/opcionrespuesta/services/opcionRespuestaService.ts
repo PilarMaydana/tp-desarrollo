@@ -24,6 +24,15 @@ export const opcionRespuestaService = {
   },
 
   /**
+   * Obtiene el detalle completo de una opción de respuesta (escala) con sus ítems ordenados (GET /api/opciones-respuesta/{id}).
+   */
+  async obtenerOpcionRespuestaPorId(id: number): Promise<OpcionRespuestaResponse> {
+    return await apiFetch<OpcionRespuestaResponse>(`/opciones-respuesta/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
    * Da de alta una nueva opción de respuesta con su lista de ítems (POST /api/opciones-respuesta - CU 029).
    * Propaga errores HTTP reales (400 con detalles[], 409 conflicto, 422 regla de negocio, 500/red) sin silenciarlos.
    */
