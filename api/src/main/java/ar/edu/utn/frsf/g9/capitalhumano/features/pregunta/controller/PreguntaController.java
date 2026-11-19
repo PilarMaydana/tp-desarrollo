@@ -2,6 +2,7 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.controller;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaFiltroDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaModificacionDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.gestor.GestorPregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.web.ApiError;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,11 +28,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Controlador REST para la gestión de Preguntas (CU 020 / CU 021).
+ * Controlador REST para la gestión de Preguntas (CU 020 / CU 021 / CU 022).
  */
 @RestController
 @RequestMapping("/api/preguntas")
-@Tag(name = "Preguntas", description = "Endpoints para la gestión, búsqueda, alta, modificación y baja de Preguntas (CU 020 / CU 021)")
+@Tag(name = "Preguntas", description = "Endpoints para la gestión, búsqueda, alta, modificación y baja de Preguntas (CU 020 / CU 021 / CU 022)")
 public class PreguntaController {
 
     private final GestorPregunta gestorPregunta;
@@ -110,27 +111,32 @@ public class PreguntaController {
     }
 
     /**
-     * Modifica una pregunta existente (CU 022 - Flujo 5.A).
+     * Modifica una pregunta existente (CU 022).
      *
-     * @param id identificador de la pregunta a modificar
-     * @param dto nuevos datos de la pregunta
+     * @param id  identificador de la pregunta a modificar
+     * @param dto nuevos datos modificables de la pregunta (competencia y factor son de solo lectura)
      * @return pregunta modificada con HTTP 200 OK
      */
     @PutMapping("/{id}")
-    @Operation(summary = "Modificar pregunta", description = "Modifica los datos y opciones de una pregunta existente.")
+    @Operation(
+            summary = "Modificar pregunta",
+            description = "Modifica los datos y opciones de respuesta ponderadas de una pregunta existente (CU 022). Competencia y factor son de solo lectura."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Pregunta modificada exitosamente",
                     content = @Content(schema = @Schema(implementation = PreguntaDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Datos obligatorios incompletos",
+            @ApiResponse(responseCode = "400", description = "Datos obligatorios incompletos, longitudes excedidas o ponderaciones inválidas",
                     content = @Content(schema = @Schema(implementation = ApiError.class))),
             @ApiResponse(responseCode = "404", description = "Pregunta no encontrada",
                     content = @Content(schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "409", description = "Conflicto por duplicidad de nombre o enunciado",
+            @ApiResponse(responseCode = "409", description = "Conflicto por duplicidad de nombre y/o enunciado en el mismo factor",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "422", description = "Regla de negocio violada (ej. la suma de ponderaciones no es exactamente 10)",
                     content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     public ResponseEntity<PreguntaDTO> modificarPregunta(
             @PathVariable Long id,
-            @Valid @RequestBody PreguntaDTO dto) {
+            @Valid @RequestBody PreguntaModificacionDTO dto) {
         PreguntaDTO modificada = gestorPregunta.modificarPregunta(id, dto);
         return ResponseEntity.ok(modificada);
     }

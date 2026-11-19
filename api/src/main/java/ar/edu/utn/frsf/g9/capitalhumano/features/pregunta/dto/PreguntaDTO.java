@@ -28,6 +28,9 @@ public class PreguntaDTO {
     @JsonAlias({"codigoCompetencia", "competenciaCodigo"})
     private String codigoCompetencia;
 
+    @JsonAlias({"competencia_id"})
+    private Long competenciaId;
+
     @JsonAlias({"factor_id"})
     private Long factorId;
 
@@ -128,6 +131,14 @@ public class PreguntaDTO {
 
     public void setCodigoCompetencia(String codigoCompetencia) {
         this.codigoCompetencia = codigoCompetencia;
+    }
+
+    public Long getCompetenciaId() {
+        return competenciaId;
+    }
+
+    public void setCompetenciaId(Long competenciaId) {
+        this.competenciaId = competenciaId;
     }
 
     public Long getFactorId() {

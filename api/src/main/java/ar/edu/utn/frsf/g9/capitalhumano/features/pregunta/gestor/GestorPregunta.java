@@ -8,6 +8,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dao.PreguntaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.OpcionRespuestaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaFiltroDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaModificacionDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.OpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.Pregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
@@ -22,18 +23,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Gestor de lógica de negocio para la gestión de Preguntas (CU 020 / CU 021).
+ * Gestor de lógica de negocio para la gestión de Preguntas (CU 020 / CU 021 / CU 022).
  */
 @Service
 public class GestorPregunta {
 
     private static final Logger log = LoggerFactory.getLogger(GestorPregunta.class);
+    private static final BigDecimal SUMA_PONDERACIONES_REQUERIDA = BigDecimal.TEN;
 
     private final PreguntaDAO preguntaDAO;
     private final FactorDAO factorDAO;
@@ -191,66 +194,122 @@ public class GestorPregunta {
     }
 
     /**
-     * Modifica los datos de una pregunta existente (CU 022 - Flujo 5.A).
+     * Modifica los datos y opciones de respuesta de una pregunta existente (CU 022).
      *
-     * @param id identificador de la pregunta a modificar
-     * @param dto nuevos datos
-     * @return DTO de la pregunta actualizada
+     * <p>Competencia y Factor son de solo lectura y no se modifican. Los datos literales se
+     * normalizan con {@code trim()} y {@code toUpperCase(Locale.ROOT)} antes de validar
+     * duplicados y persistir. Si ocurre cualquier error, la transacción hace rollback y la
+     * pregunta permanece sin cambios.</p>
+     *
+     * @param id  identificador de la pregunta a modificar
+     * @param dto nuevos datos de la pregunta y sus opciones ponderadas
+     * @return DTO actualizado de la pregunta
+     * @throws RecursoNoEncontradoException si no existe una pregunta activa con ese ID (404)
+     * @throws RecursoDuplicadoException    si otra pregunta del mismo factor tiene el mismo nombre y/o enunciado (409)
+     * @throws ReglaNegocioException        si las ponderaciones no suman exactamente 10 o hay datos inválidos (422)
      */
     @Transactional
-    public PreguntaDTO modificarPregunta(Long id, PreguntaDTO dto) {
+    public PreguntaDTO modificarPregunta(Long id, PreguntaModificacionDTO dto) {
         log.info("Iniciando modificación de pregunta con ID {}", id);
 
         Pregunta existente = preguntaDAO.findByIdAndEliminadoFalse(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pregunta", id));
 
-        String nombre = dto.getNombre() != null ? dto.getNombre().trim() : "";
-        String enunciado = dto.getEnunciado() != null ? dto.getEnunciado().trim() : "";
+        if (dto == null) {
+            throw new ReglaNegocioException("Los datos de la pregunta son obligatorios");
+        }
+
+        // 1. Normalización de campos literales (trim + mayúsculas)
+        String nombre = dto.getNombre() != null ? dto.getNombre().trim().toUpperCase(Locale.ROOT) : "";
+        String enunciado = dto.getEnunciado() != null ? dto.getEnunciado().trim().toUpperCase(Locale.ROOT) : "";
         String descripcion = (dto.getDescripcion() != null && !dto.getDescripcion().isBlank())
-                ? dto.getDescripcion().trim()
+                ? dto.getDescripcion().trim().toUpperCase(Locale.ROOT)
                 : null;
 
         if (nombre.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de la pregunta es obligatorio");
+            throw new ReglaNegocioException("El nombre de la pregunta es obligatorio");
         }
         if (enunciado.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El enunciado de la pregunta es obligatorio");
+            throw new ReglaNegocioException("El enunciado de la pregunta es obligatorio");
         }
         if (dto.getOpciones() == null || dto.getOpciones().size() < 2) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La pregunta debe tener al menos 2 opciones de respuesta");
+            throw new ReglaNegocioException("Debe ingresar al menos 2 opciones de respuesta");
         }
 
+        // 2. Validar opciones individuales y acumular ponderaciones con BigDecimal
+        BigDecimal sumaPonderaciones = BigDecimal.ZERO;
+        for (OpcionRespuestaDTO opcionDTO : dto.getOpciones()) {
+            if (opcionDTO == null) {
+                throw new ReglaNegocioException("Cada opción de respuesta es obligatoria");
+            }
+            String optNombre = opcionDTO.getNombre() != null ? opcionDTO.getNombre().trim() : "";
+            if (optNombre.isBlank()) {
+                throw new ReglaNegocioException("El nombre de la opción es obligatorio");
+            }
+            Double valorPonderacion = opcionDTO.getPonderacion();
+            if (valorPonderacion == null) {
+                throw new ReglaNegocioException("La ponderación es obligatoria para todas las opciones");
+            }
+            if (Double.isNaN(valorPonderacion) || Double.isInfinite(valorPonderacion)) {
+                throw new ReglaNegocioException("La ponderación debe ser un número válido");
+            }
+            BigDecimal ponderacion = BigDecimal.valueOf(valorPonderacion);
+            if (ponderacion.compareTo(BigDecimal.ZERO) < 0) {
+                throw new ReglaNegocioException("La ponderación debe ser mayor o igual a cero");
+            }
+            sumaPonderaciones = sumaPonderaciones.add(ponderacion);
+        }
+
+        // 3. Validar unicidad de nombre y enunciado en el mismo factor (excluyendo la propia pregunta)
         Long factorId = existente.getFactor().getId();
+        boolean nombreDuplicado = preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(
+                factorId, nombre, id);
+        boolean enunciadoDuplicado = preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(
+                factorId, enunciado, id);
 
-        // Validar unicidad respecto a otras preguntas en el mismo factor
-        if (preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(factorId, nombre, id)) {
-            throw new RecursoDuplicadoException("Ya existe otra pregunta con el nombre '" + nombre + "' para el factor seleccionado");
+        if (nombreDuplicado && enunciadoDuplicado) {
+            throw new RecursoDuplicadoException(
+                    "Ya existe otra pregunta con el mismo nombre ('" + nombre
+                            + "') y el mismo enunciado ('" + enunciado + "') para el factor seleccionado");
         }
-        if (preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(factorId, enunciado, id)) {
-            throw new RecursoDuplicadoException("Ya existe otra pregunta con el enunciado '" + enunciado + "' para el factor seleccionado");
+        if (nombreDuplicado) {
+            throw new RecursoDuplicadoException(
+                    "Ya existe otra pregunta con el nombre '" + nombre + "' para el factor seleccionado");
+        }
+        if (enunciadoDuplicado) {
+            throw new RecursoDuplicadoException(
+                    "Ya existe otra pregunta con el enunciado '" + enunciado + "' para el factor seleccionado");
         }
 
+        // 4. Validar suma exacta de ponderaciones == 10 (BigDecimal)
+        if (sumaPonderaciones.compareTo(SUMA_PONDERACIONES_REQUERIDA) != 0) {
+            throw new ReglaNegocioException(
+                    "La suma de las ponderaciones de las opciones de respuesta debe ser exactamente 10 puntos (suma actual: "
+                            + sumaPonderaciones.stripTrailingZeros().toPlainString() + ")");
+        }
+
+        // 5. Aplicar cambios en la entidad (Competencia y Factor permanecen intactos)
         existente.setNombre(nombre);
         existente.setEnunciado(enunciado);
         existente.setDescripcion(descripcion);
 
-        // Actualizar opciones de respuesta
+        // Reemplazo completo de opciones con flush intermedio para evitar conflictos UNIQUE (pregunta, nro_orden)
         existente.clearOpciones();
+        preguntaDAO.flush();
+
         int orden = 1;
         for (OpcionRespuestaDTO opcionDTO : dto.getOpciones()) {
-            if (opcionDTO.getNombre() == null || opcionDTO.getNombre().isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de cada opción de respuesta es obligatorio");
-            }
-            if (opcionDTO.getPonderacion() == null || opcionDTO.getPonderacion() < 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La ponderación de cada opción debe ser mayor o igual a 0");
-            }
-
+            String optNombre = opcionDTO.getNombre().trim().toUpperCase(Locale.ROOT);
+            String optDescripcion = (opcionDTO.getDescripcion() != null && !opcionDTO.getDescripcion().isBlank())
+                    ? opcionDTO.getDescripcion().trim().toUpperCase(Locale.ROOT)
+                    : null;
             Integer nroOrden = opcionDTO.getNroOrden() != null ? opcionDTO.getNroOrden() : orden;
+
             OpcionRespuesta opcion = new OpcionRespuesta(
                     null,
                     existente,
-                    opcionDTO.getNombre().trim(),
-                    opcionDTO.getDescripcion() != null ? opcionDTO.getDescripcion().trim() : null,
+                    optNombre,
+                    optDescripcion,
                     nroOrden,
                     opcionDTO.getPonderacion()
             );
@@ -324,6 +383,7 @@ public class GestorPregunta {
         String factorNombre = null;
         String factorCodigo = null;
         Long factorId = null;
+        Long competenciaId = null;
         String competenciaNombre = null;
         String competenciaCodigo = null;
 
@@ -332,6 +392,7 @@ public class GestorPregunta {
             factorCodigo = p.getFactor().getCodigo();
             factorId = p.getFactor().getId();
             if (p.getFactor().getCompetencia() != null) {
+                competenciaId = p.getFactor().getCompetencia().getId();
                 competenciaNombre = p.getFactor().getCompetencia().getNombre();
                 competenciaCodigo = p.getFactor().getCompetencia().getCodigo();
             }
@@ -339,7 +400,7 @@ public class GestorPregunta {
 
         List<OpcionRespuestaDTO> opcionesDTO = p.getOpciones() != null
                 ? p.getOpciones().stream()
-                .sorted(Comparator.comparing(OpcionRespuesta::getNroOrden))
+                .sorted(Comparator.comparing(OpcionRespuesta::getNroOrden, Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(o -> new OpcionRespuestaDTO(o.getId(), o.getNombre(), o.getDescripcion(), o.getNroOrden(), o.getPonderacion()))
                 .toList()
                 : List.of();
@@ -354,6 +415,7 @@ public class GestorPregunta {
                 p.getDescripcion(),
                 opcionesDTO
         );
+        dto.setCompetenciaId(competenciaId);
         dto.setFactorId(factorId);
         dto.setCodigoCompetencia(competenciaCodigo);
         return dto;
