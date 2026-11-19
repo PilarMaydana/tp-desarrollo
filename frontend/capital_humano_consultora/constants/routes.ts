@@ -15,6 +15,7 @@ export const ROUTES = {
     REPORTES: '/en-desarrollo?modulo=Reportes',
     PREGUNTAS: '/preguntas',
     PREGUNTAS_NUEVO: '/preguntas/nuevo',
+    PREGUNTAS_EDITAR: (id: number | string) => `/preguntas/${id}/editar`,
     ORDEN_MERITOS: '/en-desarrollo?modulo=Orden+de+Méritos',
     PUESTOS: '/puestos/nuevo',
     PUESTOS_NUEVO: '/puestos/nuevo',
