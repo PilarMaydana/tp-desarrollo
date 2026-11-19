@@ -5,7 +5,7 @@ export const ROUTES = {
   },
   EN_DESARROLLO: '/en-desarrollo',
   AUTH: {
-    LOGIN: '/login',
+    LOGIN: '/',
   },
   CONSULTOR: {
     EVALUACIONES: '/en-desarrollo?modulo=Evaluación+de+Candidatos',
