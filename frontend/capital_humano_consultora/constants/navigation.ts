@@ -47,6 +47,14 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['CONSULTOR'],
   },
   {
+    type: 'link',
+    label: 'Importar Candidatos',
+    href: ROUTES.CONSULTOR.CANDIDATOS_IMPORTAR,
+    icon: 'upload',
+    enabled: true,
+    roles: ['CONSULTOR'],
+  },
+  {
     type: 'group',
     label: 'Configurar evaluación',
     icon: 'tune',

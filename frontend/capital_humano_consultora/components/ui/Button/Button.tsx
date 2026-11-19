@@ -3,7 +3,7 @@
 import React, { forwardRef } from 'react';
 import { Icon, IconName } from '../Icon';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'secondary-soft' | 'icon' | 'outline' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'secondary-soft' | 'icon' | 'outline' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -48,7 +48,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon:
         'p-2.5 rounded-lg bg-transparent hover:bg-white/10 active:bg-white/20 text-white border border-white/20',
       outline:
-        'bg-transparent hover:bg-[#F4F0FF] text-[#3F2581] border-2 border-[#3F2581]',
+        'bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-300',
+      ghost:
+        'bg-transparent hover:bg-gray-100 text-gray-600 border border-transparent',
       danger:
         'bg-[#D32F2F] hover:bg-[#B71C1C] active:bg-[#9A0007] text-white',
     };
