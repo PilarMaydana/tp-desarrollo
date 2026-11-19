@@ -72,19 +72,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           } ${className}`}
       >
         {/* Cabecera del Sidebar */}
-        <div className="h-20 flex items-center justify-between px-6 bg-[#252525] border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <Icon name="groups" size={26} className="text-[#CDCEE6]" />
-            <span className="font-semibold text-lg tracking-wide text-white">Menú Principal</span>
-          </div>
-          <button
-            type="button"
-            onClick={close}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white cursor-pointer"
-            aria-label="Cerrar menú lateral"
-          >
-            <Icon name="close" size={20} />
-          </button>
+        <div className="h-20 flex items-center px-6 bg-[#252525] border-b border-white/10">
+          <span className="font-semibold text-lg tracking-wide text-white">Menú Principal</span>
         </div>
 
         {/* Lista de navegación */}

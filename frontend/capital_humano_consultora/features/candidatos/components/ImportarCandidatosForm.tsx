@@ -402,34 +402,32 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
               <Icon name="table" size={16} className="text-[#3F2581]" />
               Estructura de columnas requerida
             </h4>
-            <button
-              type="button"
-              onClick={handleDescargarEjemplo}
-              className="text-xs text-[#3F2581] hover:text-[#4E309D] font-semibold underline underline-offset-2 flex items-center gap-1 self-start sm:self-auto cursor-pointer"
-            >
-              <Icon name="upload" size={14} className="rotate-180" /> Descargar archivo de ejemplo (.csv)
-            </button>
-          </div>
-
-          {/* Bloque de solo lectura con estilo DataTable (cabecera lila #EADDFF, borde #E0E0E0 y fondo blanco) */}
-          <div className="w-full overflow-hidden rounded-xl border border-[#E0E0E0] bg-white shadow-xs">
-            <div className="flex items-center justify-between px-4 py-2.5 bg-[#EADDFF] border-b border-[#D0BCFF] text-xs text-[#3F2581] font-bold tracking-wide">
-              <span>Encabezados</span>
+            <div className="flex items-center gap-4 self-start sm:self-auto">
               <button
                 type="button"
                 onClick={handleCopiarEncabezados}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3F2581] hover:text-[#4E309D] bg-white/90 hover:bg-white border border-[#D0BCFF] px-2.5 py-1 rounded-md shadow-2xs transition-colors cursor-pointer"
+                className="text-xs text-gray-600 hover:text-[#3F2581] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                 title="Copiar encabezados al portapapeles"
               >
-                <Icon name={isCopied ? 'check' : 'copy'} size={13} className={isCopied ? 'text-green-600' : ''} />
-                <span>{isCopied ? 'Copiado' : 'Copiar'}</span>
+                <Icon name={isCopied ? 'check' : 'copy'} size={14} className={isCopied ? 'text-green-600' : 'text-gray-500'} />
+                <span>{isCopied ? 'Encabezados copiados' : 'Copiar encabezados'}</span>
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                type="button"
+                onClick={handleDescargarEjemplo}
+                className="text-xs text-[#3F2581] hover:text-[#4E309D] font-semibold underline underline-offset-2 flex items-center gap-1 cursor-pointer"
+              >
+                <Icon name="upload" size={14} className="rotate-180" /> Descargar archivo de ejemplo (.csv)
               </button>
             </div>
-            <div className="p-3.5 sm:p-4 overflow-x-auto bg-white">
-              <pre className="text-xs text-gray-800 font-mono whitespace-pre select-all">
-                {ENCABEZADOS_REQUERIDOS}
-              </pre>
-            </div>
+          </div>
+
+          {/* Bloque de código simple y limpio para lectura directa */}
+          <div className="rounded-xl border border-gray-200 bg-white p-3.5 sm:p-4 overflow-x-auto shadow-2xs">
+            <pre className="text-xs text-gray-800 font-mono whitespace-pre select-all">
+              {ENCABEZADOS_REQUERIDOS}
+            </pre>
           </div>
 
           {/* Acordeón colapsado con reglas del CU006 */}

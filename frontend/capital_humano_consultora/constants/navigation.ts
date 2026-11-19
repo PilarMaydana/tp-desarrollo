@@ -42,7 +42,7 @@ export const NAV_ITEMS: NavItem[] = [
     type: 'link',
     label: 'Evaluaciones',
     href: ROUTES.CONSULTOR.EVALUACIONES,
-    icon: 'groups',
+    icon: 'clipboard_check',
     enabled: true,
     roles: ['CONSULTOR'],
   },
