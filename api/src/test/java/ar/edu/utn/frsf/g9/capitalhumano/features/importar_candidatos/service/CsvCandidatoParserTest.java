@@ -164,13 +164,13 @@ class CsvCandidatoParserTest {
     }
 
     @Test
-    @DisplayName("Debe parsear nacionalidades latinoamericanas (países y gentilicios masc/fem)")
-    void parsear_nacionalidadesLatinoamericanas_variantesValidas() {
+    @DisplayName("Debe parsear nacionalidades latinoamericanas (países y gentilicios masc/fem) y variantes de escolaridad")
+    void parsear_nacionalidadesYEscolaridad_variantesValidas() {
         String csvContent = "Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado\n"
-                + "CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;argentino;juan.perez@mail.com;UNIVERSITARIO;False\n"
-                + "CAND-002;SILVA;ANA;38987654;DNI;1995-11-22;M;brasileña;ana.silva@mail.com;SECUNDARIO;False\n"
-                + "CAND-003;ROJAS;LUIS;29456789;LE;1982-03-08;H;chileno;luis.rojas@mail.com;PRIMARIO;False\n"
-                + "CAND-004;GARCIA;MARIA;31112233;DNI;1988-07-19;M;MÉXICO;maria.garcia@mail.com;TERCIARIO;False\n";
+                + "CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;argentino;juan.perez@mail.com;universitario incompleto;False\n"
+                + "CAND-002;SILVA;ANA;38987654;DNI;1995-11-22;M;brasileña;ana.silva@mail.com;Secundario Completo;False\n"
+                + "CAND-003;ROJAS;LUIS;29456789;LE;1982-03-08;H;chileno;luis.rojas@mail.com;primario;False\n"
+                + "CAND-004;GARCIA;MARIA;31112233;DNI;1988-07-19;M;MÉXICO;maria.garcia@mail.com;TERCIARIO INCOMPLETO;False\n";
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "candidatos_latam.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
@@ -180,29 +180,38 @@ class CsvCandidatoParserTest {
 
         assertThat(resultado).hasSize(4);
         assertThat(resultado.get(0).nacionalidad()).isEqualTo("ARGENTINA");
+        assertThat(resultado.get(0).escolaridad()).isEqualTo("UNIVERSITARIO INCOMPLETO");
+
         assertThat(resultado.get(1).nacionalidad()).isEqualTo("BRASIL");
+        assertThat(resultado.get(1).escolaridad()).isEqualTo("SECUNDARIO COMPLETO");
+
         assertThat(resultado.get(2).nacionalidad()).isEqualTo("CHILE");
+        assertThat(resultado.get(2).escolaridad()).isEqualTo("PRIMARIO");
+
         assertThat(resultado.get(3).nacionalidad()).isEqualTo("MEXICO");
+        assertThat(resultado.get(3).escolaridad()).isEqualTo("TERCIARIO INCOMPLETO");
     }
 
     @Test
-    @DisplayName("Debe rechazar nacionalidades con errores de tipeo como 'argentinooo' o países fuera de Latinoamérica como 'español' y 'ALEMANIA'")
-    void parsear_nacionalidadesInvalidas_reportaErrores() {
+    @DisplayName("Debe rechazar nacionalidades no latinoamericanas o escolaridades no permitidas")
+    void parsear_nacionalidadYEscolaridad_invalidas_reportaErrores() {
         String csvContent = "Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado\n"
-                + "CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;argentinooo;juan@mail.com;UNIVERSITARIO;False\n"
-                + "CAND-002;GARCIA;ANA;38987654;DNI;1995-11-22;M;español;ana@mail.com;UNIVERSITARIO;False\n"
-                + "CAND-003;MULLER;HANS;29456789;DNI;1985-01-01;H;ALEMANIA;hans@mail.com;UNIVERSITARIO;False\n";
+                + "CAND-001;MULLER;HANS;35123456;DNI;1990-05-14;H;ALEMANIA;hans@mail.com;DOCTORADO_FANTASMA;False\n";
 
         MockMultipartFile file = new MockMultipartFile(
-                "file", "nacionalidades_invalidas.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
+                "file", "invalidos.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
         );
 
         assertThatThrownBy(() -> parser.parsear(file))
                 .isInstanceOf(CsvImportacionException.class)
                 .satisfies(ex -> {
                     CsvImportacionException cie = (CsvImportacionException) ex;
-                    assertThat(cie.getErrores()).hasSize(3);
-                    assertThat(cie.getErrores()).allMatch(e -> "Nacionalidad".equals(e.campo()));
+                    assertThat(cie.getErrores()).anyMatch(e ->
+                            "Nacionalidad".equals(e.campo()) && e.mensaje().contains("Nacionalidad inválida")
+                    );
+                    assertThat(cie.getErrores()).anyMatch(e ->
+                            "Escolaridad".equals(e.campo()) && e.mensaje().contains("Nivel de escolaridad inválido")
+                    );
                 });
     }
 }

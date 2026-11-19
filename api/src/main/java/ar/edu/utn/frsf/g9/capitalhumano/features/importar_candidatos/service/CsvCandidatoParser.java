@@ -3,6 +3,7 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.service;
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.Genero;
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.Nacionalidad;
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.TipoDocumento;
+import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.escolaridad.Escolaridad;
 import ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.dto.ErrorImportacionDTO.DetalleErrorFilaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.dto.FilaCandidatoCsvDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.exception.CsvImportacionException;
@@ -341,9 +342,22 @@ public class CsvCandidatoParser {
         }
 
         // 10. Escolaridad
+        String escolaridadCanonica = null;
         if (escolaridad.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Escolaridad", "La escolaridad es obligatoria y no puede estar vacía."));
             filaConError = true;
+        } else {
+            Optional<Escolaridad> escOpt = Escolaridad.parse(escolaridad);
+            if (escOpt.isEmpty()) {
+                errores.add(new DetalleErrorFilaDTO(
+                        nroFila,
+                        "Escolaridad",
+                        "Nivel de escolaridad inválido: '" + escolaridad + "'. Valores permitidos: Primario, Secundario, Terciario, Universitario (y sus variantes Completo / Incompleto)."
+                ));
+                filaConError = true;
+            } else {
+                escolaridadCanonica = escOpt.get().getDescripcion();
+            }
         }
 
         // 11. Eliminado (True / False case-insensitive)
@@ -379,7 +393,7 @@ public class CsvCandidatoParser {
                     genero,
                     nacionalidadCanonica,
                     email.trim().toLowerCase(Locale.ROOT),
-                    escolaridad.trim().toUpperCase(Locale.ROOT),
+                    escolaridadCanonica,
                     eliminado
             ));
         }

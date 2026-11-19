@@ -480,7 +480,10 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
                   <div>
                     <span className="font-bold text-gray-800 font-mono">Email:</span> Formato de correo electrónico válido.
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
+                    <span className="font-bold text-gray-800 font-mono">Escolaridad:</span> Niveles: <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Primario</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Secundario</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Terciario</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Universitario</code> (y variantes <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Completo</code> / <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Incompleto</code>).
+                  </div>
+                  <div className="sm:col-span-2">
                     <span className="font-bold text-gray-800 font-mono">Eliminado:</span> Booleano <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">True</code> (baja lógica) o <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">False</code>.
                   </div>
                 </div>
