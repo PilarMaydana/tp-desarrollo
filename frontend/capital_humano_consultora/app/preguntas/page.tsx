@@ -13,6 +13,7 @@ export default function PreguntasPage() {
     <DashboardLayout>
       <GestionarPreguntasScreen
         onNavigateNuevo={() => router.push(ROUTES.CONSULTOR.PREGUNTAS_NUEVO)}
+        onNavigateModificar={(id) => router.push(ROUTES.CONSULTOR.PREGUNTAS_EDITAR(id))}
         onCancelRedirect={ROUTES.HOME}
       />
     </DashboardLayout>

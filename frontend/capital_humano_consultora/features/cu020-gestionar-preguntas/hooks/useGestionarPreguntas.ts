@@ -188,7 +188,7 @@ export function useGestionarPreguntas(options: UseGestionarPreguntasOptions = {}
       options.onNavigateModificar(selectedPregunta.id);
       return;
     }
-    router.push(`/en-desarrollo?modulo=Modificar+Pregunta&id=${selectedPregunta.id}`);
+    router.push(ROUTES.CONSULTOR.PREGUNTAS_EDITAR(selectedPregunta.id));
   }, [selectedPregunta, options, router]);
 
   // Botón «Eliminar» -> Requiere selección previa (CU 023)
