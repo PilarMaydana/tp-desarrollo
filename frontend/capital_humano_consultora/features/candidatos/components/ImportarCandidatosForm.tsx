@@ -23,11 +23,6 @@ export interface ImportarCandidatosFormProps {
 const ENCABEZADOS_REQUERIDOS =
   'Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado';
 
-const EJEMPLO_CSV = `${ENCABEZADOS_REQUERIDOS}
-CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False
-CAND-002;GOMEZ;MARIA;38987654;DNI;1995-11-22;M;ARGENTINA;maria.gomez@mail.com;TERCIARIO;False
-CAND-003;LOPEZ;CARLOS;29456789;LE;1982-03-08;H;ARGENTINA;carlos.lopez@mail.com;UNIVERSITARIO;True`;
-
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
@@ -49,6 +44,7 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
   // Estados de interfaz interactiva
   const [isCopied, setIsCopied] = useState(false);
   const [isFormatAccordionOpen, setIsFormatAccordionOpen] = useState(false);
+  const [isErrorDetailsOpen, setIsErrorDetailsOpen] = useState(false);
 
   // Formato legible para el tamaño de archivo
   const formatFileSize = (bytes: number): string => {
@@ -134,6 +130,8 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
     }
     if (isSubmitting) return;
     setSelectedFile(null);
+    setErrorResponse(null);
+    setIsErrorDetailsOpen(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -184,19 +182,6 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
     }
   };
 
-  // Descargar CSV de ejemplo para facilitar pruebas al usuario
-  const handleDescargarEjemplo = () => {
-    const blob = new Blob([EJEMPLO_CSV], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'candidatos_ejemplo.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="flex flex-col gap-4 w-full max-w-5xl mx-auto pb-12">
       {/* Migas de pan: Inicio > Importar Candidatos */}
@@ -218,59 +203,88 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
           </p>
         </div>
 
-        {/* Alerta de Error (HTTP 400 u otros errores) sin resetear la pantalla */}
+        {/* Alerta de Error: solo texto en rojo sin recuadro ni fondo */}
         {errorResponse && (
           <div
             role="alert"
             aria-live="assertive"
-            className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-300 text-[#D32F2F] rounded-2xl flex items-start gap-3 shadow-xs animate-in fade-in duration-150"
+            className="mb-5 py-2 text-[#D32F2F] flex items-start justify-between gap-3 animate-in fade-in duration-150"
           >
-            <div className="shrink-0 mt-0.5">
-              <Icon name="error" size={22} className="text-[#D32F2F]" />
+            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+              <div className="shrink-0 mt-0.5">
+                <Icon name="error" size={20} className="text-[#D32F2F]" />
+              </div>
+
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <p className="text-sm sm:text-base font-semibold text-[#D32F2F] leading-snug">
+                  {errorResponse.mensaje || 'El archivo CSV contiene errores de validación.'}
+                  {errorResponse.errores && errorResponse.errores.length > 0 && (
+                    <span className="font-normal text-red-600 ml-1">
+                      Por favor revise los formatos y reglas especificados abajo.
+                    </span>
+                  )}
+                </p>
+
+                {/* Detalle opcional desplegable */}
+                {isErrorDetailsOpen && errorResponse.errores && errorResponse.errores.length > 0 && (
+                  <div className="pt-1.5 mt-1 animate-in fade-in duration-150">
+                    <p className="text-xs font-bold uppercase tracking-wider mb-1 text-[#D32F2F]">
+                      Observaciones:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-xs text-red-700 max-h-40 overflow-y-auto pr-2">
+                      {errorResponse.errores.map((e, idx) => {
+                        let textoError = '';
+                        if (e.fila !== null) {
+                          textoError = `Fila ${e.fila}: ${e.mensaje}`;
+                        } else if (e.campo !== null) {
+                          textoError = `Campo "${e.campo}": ${e.mensaje}`;
+                        } else {
+                          textoError = e.mensaje;
+                        }
+
+                        return (
+                          <li key={`error-item-${idx}`} className="leading-snug">
+                            <span>{textoError}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex-1 space-y-2">
-              <h3 className="text-sm sm:text-base font-bold text-red-900">
-                {errorResponse.mensaje || 'Atención: No fue posible importar los candidatos'}
-              </h3>
-
+            {/* Acciones fijas en la esquina superior derecha: Ver detalle y cerrar */}
+            <div className="flex items-center gap-3 shrink-0 pt-0.5">
               {errorResponse.errores && errorResponse.errores.length > 0 && (
-                <div className="pt-1">
-                  <p className="text-xs font-semibold text-red-800 uppercase tracking-wider mb-1.5">
-                    Detalle de errores detectados ({errorResponse.errores.length}):
-                  </p>
-                  <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm text-red-700 max-h-60 overflow-y-auto pr-2">
-                    {errorResponse.errores.map((e, idx) => {
-                      let textoError = '';
-                      if (e.fila !== null && e.campo !== null) {
-                        textoError = `Fila ${e.fila} - Campo "${e.campo}": ${e.mensaje}`;
-                      } else if (e.fila !== null) {
-                        textoError = `Fila ${e.fila}: ${e.mensaje}`;
-                      } else if (e.campo !== null) {
-                        textoError = `Campo "${e.campo}": ${e.mensaje}`;
-                      } else {
-                        textoError = e.mensaje;
-                      }
-
-                      return (
-                        <li key={`error-item-${idx}`} className="leading-snug">
-                          <span>{textoError}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsErrorDetailsOpen((prev) => !prev)}
+                  className="text-xs font-bold text-[#D32F2F] hover:underline flex items-center justify-end gap-1 cursor-pointer select-none min-w-[75px]"
+                  aria-expanded={isErrorDetailsOpen}
+                >
+                  <span>{isErrorDetailsOpen ? 'Ocultar' : 'Ver detalle'}</span>
+                  <Icon
+                    name="chevron_down"
+                    size={14}
+                    className={`transition-transform duration-200 ${isErrorDetailsOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
               )}
-            </div>
 
-            <button
-              type="button"
-              onClick={() => setErrorResponse(null)}
-              className="shrink-0 p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-md transition-colors cursor-pointer"
-              title="Cerrar alerta"
-            >
-              <Icon name="close" size={18} />
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setErrorResponse(null);
+                  setIsErrorDetailsOpen(false);
+                }}
+                className="p-0.5 text-red-400 hover:text-[#D32F2F] rounded-md transition-colors cursor-pointer"
+                title="Cerrar aviso"
+                aria-label="Cerrar aviso de error"
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
           </div>
         )}
 
@@ -402,25 +416,15 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
               <Icon name="table" size={16} className="text-[#3F2581]" />
               Estructura de columnas requerida
             </h4>
-            <div className="flex items-center gap-4 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={handleCopiarEncabezados}
-                className="text-xs text-gray-600 hover:text-[#3F2581] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
-                title="Copiar encabezados al portapapeles"
-              >
-                <Icon name={isCopied ? 'check' : 'copy'} size={14} className={isCopied ? 'text-green-600' : 'text-gray-500'} />
-                <span>{isCopied ? 'Encabezados copiados' : 'Copiar encabezados'}</span>
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                type="button"
-                onClick={handleDescargarEjemplo}
-                className="text-xs text-[#3F2581] hover:text-[#4E309D] font-semibold underline underline-offset-2 flex items-center gap-1 cursor-pointer"
-              >
-                <Icon name="upload" size={14} className="rotate-180" /> Descargar archivo de ejemplo (.csv)
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleCopiarEncabezados}
+              className="text-xs text-gray-600 hover:text-[#3F2581] font-semibold flex items-center gap-1 cursor-pointer transition-colors self-start sm:self-auto"
+              title="Copiar encabezados al portapapeles"
+            >
+              <Icon name={isCopied ? 'check' : 'copy'} size={14} className={isCopied ? 'text-green-600' : 'text-gray-500'} />
+              <span>{isCopied ? 'Encabezados copiados' : 'Copiar encabezados'}</span>
+            </button>
           </div>
 
           {/* Bloque de código simple y limpio para lectura directa */}
@@ -459,22 +463,22 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
                     <span className="font-bold text-gray-800 font-mono">Apellido y Nombre:</span> Texto obligatorio.
                   </div>
                   <div>
-                    <span className="font-bold text-gray-800 font-mono">Tipo documento:</span> Permitidos: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">DNI</code>, <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">LE</code>, <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">LC</code>, <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">PP</code>.
+                    <span className="font-bold text-gray-800 font-mono">Tipo documento:</span> Permitidos: <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">DNI</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">LE</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">LC</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">PP</code>.
                   </div>
                   <div>
                     <span className="font-bold text-gray-800 font-mono">Nro documento:</span> Dígitos identificatorios.
                   </div>
                   <div>
-                    <span className="font-bold text-gray-800 font-mono">Fecha de nacimiento:</span> Formato ISO <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">AAAA-MM-DD</code> (ej. 1990-05-14).
+                    <span className="font-bold text-gray-800 font-mono">Fecha de nacimiento:</span> Formato ISO <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">AAAA-MM-DD</code> (ej. 1990-05-14).
                   </div>
                   <div>
-                    <span className="font-bold text-gray-800 font-mono">Género:</span> <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">H</code> (Hombre) o <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">M</code> (Mujer).
+                    <span className="font-bold text-gray-800 font-mono">Género:</span> <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">H</code> (Hombre) o <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">M</code> (Mujer).
                   </div>
                   <div>
                     <span className="font-bold text-gray-800 font-mono">Email:</span> Formato de correo electrónico válido.
                   </div>
                   <div>
-                    <span className="font-bold text-gray-800 font-mono">Eliminado:</span> Booleano <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">True</code> (baja lógica) o <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">False</code>.
+                    <span className="font-bold text-gray-800 font-mono">Eliminado:</span> Booleano <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">True</code> (baja lógica) o <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">False</code>.
                   </div>
                 </div>
               </div>
