@@ -20,7 +20,7 @@ function DashboardContent({ children, consultorNombre, className = '' }: Dashboa
   const pathname = usePathname();
 
   const isCandidato = user?.role === 'CANDIDATO';
-  const isCandidatoRoute = pathname?.startsWith('/candidato') || pathname?.includes('/candidato');
+  const isCandidatoRoute = pathname === '/candidato' || pathname?.startsWith('/candidato/');
 
   useEffect(() => {
     if (isLoading) return;
