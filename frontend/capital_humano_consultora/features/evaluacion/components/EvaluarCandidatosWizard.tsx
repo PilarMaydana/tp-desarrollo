@@ -5,6 +5,8 @@ import { Stepper } from '@/components/molecules/Stepper';
 import { Button } from '@/components/ui/Button';
 import { useEvaluacionWizard } from '../hooks/useEvaluacionWizard';
 import { PasoCandidatos } from './PasoCandidatos';
+import { PasoPuesto } from './PasoPuesto';
+import { ModalCompetenciasNoEvaluables } from './ModalCompetenciasNoEvaluables';
 
 const WIZARD_STEPS = [
   { id: 'candidatos', label: 'Candidatos' },
@@ -61,22 +63,48 @@ export const EvaluarCandidatosWizard: React.FC = () => {
         />
       )}
 
-      {/* Paso 2 y Paso 3: se incorporan en los pasos siguientes */}
-      {wizard.currentStep > 0 && (
+      {/* Paso 2: Selección de puesto y competencias requeridas */}
+      {wizard.currentStep === 1 && (
+        <PasoPuesto
+          cantidadCandidatos={wizard.candidatosAEvaluar.length}
+          puestos={wizard.puestos}
+          isLoadingPuestos={wizard.isLoadingPuestos}
+          puestosError={wizard.puestosError}
+          onReintentarPuestos={wizard.cargarPuestos}
+          selectedPuestoId={wizard.selectedPuestoId}
+          onSelectPuesto={wizard.handleSelectPuesto}
+          detallePuesto={wizard.detallePuesto}
+          isLoadingCompetencias={wizard.isLoadingCompetencias}
+          step2Error={wizard.step2Error}
+          onDismissStep2Error={wizard.handleDismissStep2Error}
+          isLoadingPreview={wizard.isLoadingPreview}
+          onAnterior={wizard.handleAnteriorPaso2}
+          onSiguiente={wizard.handleSiguientePaso2}
+        />
+      )}
+
+      {/* Paso 3: se incorpora en el siguiente paso */}
+      {wizard.currentStep === 2 && (
         <div className="bg-white p-8 rounded-2xl border border-[#D0BCFF] shadow-xs flex flex-col gap-4 items-start">
-          <p className="text-sm text-[#757575]">
-            Paso {wizard.currentStep + 1} en construcción.
-          </p>
+          <p className="text-sm text-[#757575]">Paso 3 en construcción.</p>
           <Button
             type="button"
             variant="secondary"
             leftIcon="arrow_back"
-            onClick={() => wizard.setCurrentStep(0)}
+            onClick={() => wizard.setCurrentStep(1)}
           >
-            Volver al Paso 1
+            Volver al Paso 2
           </Button>
         </div>
       )}
+
+      {/* Modal Flujo 9.A: Competencias sin factores válidos */}
+      <ModalCompetenciasNoEvaluables
+        isOpen={wizard.modal9A.isOpen}
+        mensaje={wizard.modal9A.mensaje}
+        competencias={wizard.modal9A.competencias}
+        onAceptar={wizard.handleAceptarModal9A}
+      />
     </div>
   );
 };

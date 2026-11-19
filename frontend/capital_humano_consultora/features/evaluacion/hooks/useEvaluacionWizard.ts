@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -11,14 +12,23 @@ import { ApiError, evaluacionService } from '../services/evaluacionService';
 import type {
   BackendApiErrorData,
   CandidatoResumenDTO,
+  DetallePuestoEvaluacionDTO,
   ErrorItem,
   ErrorPanelState,
+  PrevisualizacionEvaluacionDTO,
+  PuestoResumenDTO,
 } from '../types';
 
 export type WizardStepIndex = 0 | 1 | 2;
 
 export const MENSAJE_SELECCIONAR_CANDIDATOS = 'Debe seleccionar uno o más candidatos';
 export const MENSAJE_SELECCIONAR_PUESTO = 'Debe seleccionar una función o puesto';
+
+export interface Modal9AState {
+  isOpen: boolean;
+  mensaje: string | null;
+  competencias: string[];
+}
 
 export function extraerErrorPanelDesdeApiError(
   err: unknown,
@@ -58,6 +68,7 @@ export function extraerErrorPanelDesdeApiError(
 }
 
 export function useEvaluacionWizard() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState<WizardStepIndex>(0);
 
   // --- Paso 1: Búsqueda y selección de candidatos ---
@@ -83,6 +94,77 @@ export function useEvaluacionWizard() {
   const [blockedNros, setBlockedNros] = useState<Set<string>>(() => new Set());
   const [isValidatingCandidatos, setIsValidatingCandidatos] = useState<boolean>(false);
 
+  // --- Paso 2: Selección de puesto y competencias ---
+  const [puestos, setPuestos] = useState<PuestoResumenDTO[]>([]);
+  const [hasLoadedPuestos, setHasLoadedPuestos] = useState<boolean>(false);
+  const [isLoadingPuestos, setIsLoadingPuestos] = useState<boolean>(false);
+  const [puestosError, setPuestosError] = useState<ErrorPanelState | null>(null);
+
+  const [selectedPuestoId, setSelectedPuestoId] = useState<string>('');
+  const [detallePuesto, setDetallePuesto] = useState<DetallePuestoEvaluacionDTO | null>(null);
+  const [isLoadingCompetencias, setIsLoadingCompetencias] = useState<boolean>(false);
+  const [step2Error, setStep2Error] = useState<ErrorPanelState | null>(null);
+  const [modal9A, setModal9A] = useState<Modal9AState>({
+    isOpen: false,
+    mensaje: null,
+    competencias: [],
+  });
+  const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(false);
+  const competenciasRequestIdRef = useRef<number>(0);
+
+  // --- Paso 3: Previsualización ---
+  const [previsualizacion, setPrevisualizacion] =
+    useState<PrevisualizacionEvaluacionDTO | null>(null);
+
+  // Descartar completamente el estado del wizard en memoria
+  const resetWizardState = useCallback(() => {
+    competenciasRequestIdRef.current += 1;
+    searchForm.reset({ apellido: '', nombre: '', nroCandidato: '' });
+    setCurrentStep(0);
+    setResultadosBusqueda([]);
+    setHasSearched(false);
+    setIsSearching(false);
+    setSearchError(null);
+    setSelectedResultadoIds([]);
+    setCandidatosAEvaluar([]);
+    setSelectedAEvaluarIds([]);
+    setStep1Error(null);
+    setBlockedNros(new Set());
+    setIsValidatingCandidatos(false);
+    setPuestos([]);
+    setHasLoadedPuestos(false);
+    setIsLoadingPuestos(false);
+    setPuestosError(null);
+    setSelectedPuestoId('');
+    setDetallePuesto(null);
+    setIsLoadingCompetencias(false);
+    setStep2Error(null);
+    setModal9A({ isOpen: false, mensaje: null, competencias: [] });
+    setIsLoadingPreview(false);
+    setPrevisualizacion(null);
+  }, [searchForm]);
+
+  const cargarPuestos = useCallback(async () => {
+    setIsLoadingPuestos(true);
+    setPuestosError(null);
+    try {
+      const lista = await evaluacionService.listarPuestos();
+      setPuestos(Array.isArray(lista) ? lista : []);
+      setHasLoadedPuestos(true);
+    } catch (err: unknown) {
+      setPuestosError(
+        extraerErrorPanelDesdeApiError(
+          err,
+          'No fue posible obtener el listado de puestos.',
+          'Error al cargar puestos'
+        )
+      );
+    } finally {
+      setIsLoadingPuestos(false);
+    }
+  }, []);
+
+  // --- Handlers Paso 1 ---
   const handleBuscarCandidatos = searchForm.handleSubmit(async (data) => {
     setIsSearching(true);
     setSearchError(null);
@@ -217,6 +299,9 @@ export function useEvaluacionWizard() {
       const candidatoIds = candidatosAEvaluar.map((c) => c.id);
       await evaluacionService.validarCandidatos(candidatoIds);
       setCurrentStep(1);
+      if (!hasLoadedPuestos) {
+        void cargarPuestos();
+      }
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 422) {
         const data = err.data as BackendApiErrorData | undefined;
@@ -250,7 +335,136 @@ export function useEvaluacionWizard() {
     } finally {
       setIsValidatingCandidatos(false);
     }
-  }, [candidatosAEvaluar]);
+  }, [candidatosAEvaluar, hasLoadedPuestos, cargarPuestos]);
+
+  // --- Handlers Paso 2 ---
+  const handleSelectPuesto = useCallback(async (puestoIdStr: string) => {
+    const requestId = ++competenciasRequestIdRef.current;
+    setSelectedPuestoId(puestoIdStr);
+    setDetallePuesto(null);
+    setStep2Error(null);
+
+    if (!puestoIdStr) {
+      setIsLoadingCompetencias(false);
+      return;
+    }
+
+    const puestoId = Number(puestoIdStr);
+    if (!Number.isInteger(puestoId) || puestoId <= 0) {
+      setIsLoadingCompetencias(false);
+      return;
+    }
+
+    setIsLoadingCompetencias(true);
+
+    try {
+      const detalle = await evaluacionService.obtenerCompetenciasPuesto(puestoId);
+      if (competenciasRequestIdRef.current !== requestId) return;
+      setDetallePuesto(detalle);
+    } catch (err: unknown) {
+      if (competenciasRequestIdRef.current !== requestId) return;
+
+      // Flujo 9.A (422): competencias sin factores válidos o puesto sin competencias evaluables
+      if (err instanceof ApiError && err.status === 422) {
+        const data = err.data as BackendApiErrorData | undefined;
+        const competencias = Array.isArray(data?.detalles)
+          ? data.detalles.map((d) => d.mensaje).filter(Boolean)
+          : [];
+        setModal9A({
+          isOpen: true,
+          mensaje: data?.mensaje || err.message,
+          competencias,
+        });
+      } else {
+        setStep2Error(
+          extraerErrorPanelDesdeApiError(
+            err,
+            'No fue posible consultar las competencias del puesto seleccionado.',
+            'Error al consultar competencias'
+          )
+        );
+      }
+    } finally {
+      if (competenciasRequestIdRef.current === requestId) {
+        setIsLoadingCompetencias(false);
+      }
+    }
+  }, []);
+
+  // Flujo 9.A.3 - 9.A.4: Al presionar «Aceptar» el caso de uso finaliza y vuelve al inicio
+  const handleAceptarModal9A = useCallback(() => {
+    resetWizardState();
+    // TODO: apuntar a la pantalla principal cuando exista
+    router.push('/');
+  }, [resetWizardState, router]);
+
+  // Volver al Paso 1 conservando los candidatos agregados
+  const handleAnteriorPaso2 = useCallback(() => {
+    setStep2Error(null);
+    setCurrentStep(0);
+  }, []);
+
+  // Paso 10 y Flujo 10.A: Previsualizar evaluación y avanzar al Paso 3
+  const handleSiguientePaso2 = useCallback(async () => {
+    // Flujo 10.A: «Siguiente» sin puesto elegido
+    if (!selectedPuestoId) {
+      setStep2Error({
+        titulo: 'Selección requerida',
+        mensajeGeneral: MENSAJE_SELECCIONAR_PUESTO,
+        detalles: [],
+      });
+      return;
+    }
+
+    const puestoId = Number(selectedPuestoId);
+    if (!Number.isInteger(puestoId) || puestoId <= 0) {
+      setStep2Error({
+        titulo: 'Selección requerida',
+        mensajeGeneral: MENSAJE_SELECCIONAR_PUESTO,
+        detalles: [],
+      });
+      return;
+    }
+
+    setIsLoadingPreview(true);
+    setStep2Error(null);
+
+    try {
+      const preview = await evaluacionService.previsualizarEvaluacion({
+        puestoId,
+        candidatoIds: candidatosAEvaluar.map((c) => c.id),
+      });
+      setPrevisualizacion(preview);
+      setCurrentStep(2);
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 422) {
+        const data = err.data as BackendApiErrorData | undefined;
+        const esErrorCompetencias =
+          Array.isArray(data?.detalles) &&
+          data.detalles.length > 0 &&
+          data.detalles.every((d) => d.campo === 'competencia');
+
+        if (esErrorCompetencias) {
+          setModal9A({
+            isOpen: true,
+            mensaje: data?.mensaje || err.message,
+            competencias: data.detalles!.map((d) => d.mensaje).filter(Boolean),
+          });
+          return;
+        }
+      }
+
+      setStep2Error(
+        extraerErrorPanelDesdeApiError(
+          err,
+          'No fue posible generar la previsualización de la evaluación.',
+          'Error al previsualizar evaluación'
+        )
+      );
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  }, [selectedPuestoId, candidatosAEvaluar]);
 
   const handleDismissSearchError = useCallback(() => {
     setSearchError(null);
@@ -260,16 +474,30 @@ export function useEvaluacionWizard() {
     setStep1Error(null);
   }, []);
 
-  const handleStepClick = useCallback((stepIndex: number) => {
-    if (stepIndex < currentStep && (stepIndex === 0 || stepIndex === 1)) {
-      setCurrentStep(stepIndex);
-    }
-  }, [currentStep]);
+  const handleDismissStep2Error = useCallback(() => {
+    setStep2Error(null);
+  }, []);
+
+  const handleStepClick = useCallback(
+    (stepIndex: number) => {
+      if (stepIndex >= currentStep) return;
+      if (stepIndex === 0) {
+        setStep2Error(null);
+        setPrevisualizacion(null);
+        setCurrentStep(0);
+      } else if (stepIndex === 1) {
+        setPrevisualizacion(null);
+        setCurrentStep(1);
+      }
+    },
+    [currentStep]
+  );
 
   return {
     currentStep,
     setCurrentStep,
     handleStepClick,
+    resetWizardState,
     // Paso 1
     register: searchForm.register,
     handleBuscarCandidatos,
@@ -292,5 +520,23 @@ export function useEvaluacionWizard() {
     handleDismissStep1Error,
     isValidatingCandidatos,
     handleSiguientePaso1,
+    // Paso 2
+    puestos,
+    isLoadingPuestos,
+    puestosError,
+    cargarPuestos,
+    selectedPuestoId,
+    handleSelectPuesto,
+    detallePuesto,
+    isLoadingCompetencias,
+    step2Error,
+    handleDismissStep2Error,
+    modal9A,
+    handleAceptarModal9A,
+    isLoadingPreview,
+    handleAnteriorPaso2,
+    handleSiguientePaso2,
+    // Paso 3
+    previsualizacion,
   };
 }

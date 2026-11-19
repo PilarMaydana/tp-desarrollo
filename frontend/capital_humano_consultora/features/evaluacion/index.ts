@@ -4,4 +4,6 @@ export * from './services/evaluacionService';
 export * from './hooks/useEvaluacionWizard';
 export * from './components/CandidatosSelectionTable';
 export * from './components/PasoCandidatos';
+export * from './components/PasoPuesto';
+export * from './components/ModalCompetenciasNoEvaluables';
 export * from './components/EvaluarCandidatosWizard';
