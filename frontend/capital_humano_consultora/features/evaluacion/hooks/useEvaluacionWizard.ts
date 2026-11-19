@@ -8,7 +8,11 @@ import {
   BuscarCandidatosFormData,
   BuscarCandidatosSchema,
 } from '../schemas/buscarCandidatos.schema';
-import { ApiError, evaluacionService } from '../services/evaluacionService';
+import {
+  ApiError,
+  dispararDescargaArchivo,
+  evaluacionService,
+} from '../services/evaluacionService';
 import type {
   BackendApiErrorData,
   CandidatoResumenDTO,
@@ -112,13 +116,28 @@ export function useEvaluacionWizard() {
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(false);
   const competenciasRequestIdRef = useRef<number>(0);
 
-  // --- Paso 3: Previsualización ---
+  // --- Paso 3: Previsualización, confirmación y exportación Excel ---
   const [previsualizacion, setPrevisualizacion] =
     useState<PrevisualizacionEvaluacionDTO | null>(null);
+  const [step3Error, setStep3Error] = useState<ErrorPanelState | null>(null);
+  const [isFinalizing, setIsFinalizing] = useState<boolean>(false);
+  const [evaluacionCreadaId, setEvaluacionCreadaId] = useState<number | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
+  const [exportError, setExportError] = useState<ErrorPanelState | null>(null);
+
+  // Candados síncronos para evitar dobles envíos ante doble clic
+  const isFinalizingRef = useRef<boolean>(false);
+  const evaluacionCreadaIdRef = useRef<number | null>(null);
+  const isExportingRef = useRef<boolean>(false);
 
   // Descartar completamente el estado del wizard en memoria
   const resetWizardState = useCallback(() => {
     competenciasRequestIdRef.current += 1;
+    isFinalizingRef.current = false;
+    evaluacionCreadaIdRef.current = null;
+    isExportingRef.current = false;
+
     searchForm.reset({ apellido: '', nombre: '', nroCandidato: '' });
     setCurrentStep(0);
     setResultadosBusqueda([]);
@@ -142,6 +161,12 @@ export function useEvaluacionWizard() {
     setModal9A({ isOpen: false, mensaje: null, competencias: [] });
     setIsLoadingPreview(false);
     setPrevisualizacion(null);
+    setStep3Error(null);
+    setIsFinalizing(false);
+    setEvaluacionCreadaId(null);
+    setIsExportModalOpen(false);
+    setIsExportingExcel(false);
+    setExportError(null);
   }, [searchForm]);
 
   const cargarPuestos = useCallback(async () => {
@@ -435,6 +460,7 @@ export function useEvaluacionWizard() {
         candidatoIds: candidatosAEvaluar.map((c) => c.id),
       });
       setPrevisualizacion(preview);
+      setStep3Error(null);
       setCurrentStep(2);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 422) {
@@ -466,6 +492,105 @@ export function useEvaluacionWizard() {
     }
   }, [selectedPuestoId, candidatosAEvaluar]);
 
+  // --- Handlers Paso 3 ---
+  // Volver al Paso 2: limpia previsualización para que al avanzar se regeneren claves
+  const handleAnteriorPaso3 = useCallback(() => {
+    if (isFinalizingRef.current || evaluacionCreadaIdRef.current !== null) {
+      return;
+    }
+    setPrevisualizacion(null);
+    setStep3Error(null);
+    setCurrentStep(1);
+  }, []);
+
+  // Flujo 12.A: «Cancelar» descarta todo el estado sin llamadas al backend y vuelve al inicio
+  const handleCancelarPaso3 = useCallback(() => {
+    if (isFinalizingRef.current || evaluacionCreadaIdRef.current !== null) {
+      return;
+    }
+    resetWizardState();
+    // TODO: apuntar a la pantalla principal cuando exista
+    router.push('/');
+  }, [resetWizardState, router]);
+
+  // Pasos 12 y 13: Confirmar y persistir evaluación con las mismas claves mostradas
+  const handleFinalizar = useCallback(async () => {
+    if (!previsualizacion) return;
+    if (isFinalizingRef.current || evaluacionCreadaIdRef.current !== null) {
+      return;
+    }
+
+    isFinalizingRef.current = true;
+    setIsFinalizing(true);
+    setStep3Error(null);
+
+    const clavesPorCandidato: Record<string, string> = {};
+    for (const candidato of previsualizacion.candidatos) {
+      clavesPorCandidato[String(candidato.candidatoId)] = candidato.claveAcceso;
+    }
+
+    try {
+      const creada = await evaluacionService.crearEvaluacion({
+        puestoId: previsualizacion.puestoId,
+        candidatoIds: previsualizacion.candidatos.map((c) => c.candidatoId),
+        clavesPorCandidato,
+      });
+
+      evaluacionCreadaIdRef.current = creada.evaluacionId;
+      setEvaluacionCreadaId(creada.evaluacionId);
+      setExportError(null);
+      setIsExportModalOpen(true);
+    } catch (err: unknown) {
+      setStep3Error(
+        extraerErrorPanelDesdeApiError(
+          err,
+          'No fue posible crear la evaluación.',
+          'Error al finalizar la evaluación'
+        )
+      );
+      isFinalizingRef.current = false;
+    } finally {
+      setIsFinalizing(false);
+    }
+  }, [previsualizacion]);
+
+  // Flujo 14.A: «No» a la exportación -> vuelve al inicio
+  const handleNoExportar = useCallback(() => {
+    if (isExportingRef.current) return;
+    resetWizardState();
+    // TODO: apuntar a la pantalla principal cuando exista
+    router.push('/');
+  }, [resetWizardState, router]);
+
+  // Flujo 14: «Sí» -> descargar .xls y volver al inicio (en error, mantener modal abierto para reintentar)
+  const handleSiExportar = useCallback(async () => {
+    const id = evaluacionCreadaIdRef.current ?? evaluacionCreadaId;
+    if (id === null || isExportingRef.current) return;
+
+    isExportingRef.current = true;
+    setIsExportingExcel(true);
+    setExportError(null);
+
+    try {
+      const { blob, filename } = await evaluacionService.exportarEvaluacionExcel(id);
+      dispararDescargaArchivo(blob, filename);
+      resetWizardState();
+      // TODO: apuntar a la pantalla principal cuando exista
+      router.push('/');
+    } catch (err: unknown) {
+      setExportError(
+        extraerErrorPanelDesdeApiError(
+          err,
+          'No fue posible descargar el archivo Excel.',
+          'Error al exportar Excel'
+        )
+      );
+    } finally {
+      isExportingRef.current = false;
+      setIsExportingExcel(false);
+    }
+  }, [evaluacionCreadaId, resetWizardState, router]);
+
   const handleDismissSearchError = useCallback(() => {
     setSearchError(null);
   }, []);
@@ -478,14 +603,27 @@ export function useEvaluacionWizard() {
     setStep2Error(null);
   }, []);
 
+  const handleDismissStep3Error = useCallback(() => {
+    setStep3Error(null);
+  }, []);
+
+  const handleDismissExportError = useCallback(() => {
+    setExportError(null);
+  }, []);
+
   const handleStepClick = useCallback(
     (stepIndex: number) => {
+      if (isFinalizingRef.current || evaluacionCreadaIdRef.current !== null) {
+        return;
+      }
       if (stepIndex >= currentStep) return;
       if (stepIndex === 0) {
         setStep2Error(null);
+        setStep3Error(null);
         setPrevisualizacion(null);
         setCurrentStep(0);
       } else if (stepIndex === 1) {
+        setStep3Error(null);
         setPrevisualizacion(null);
         setCurrentStep(1);
       }
@@ -538,5 +676,18 @@ export function useEvaluacionWizard() {
     handleSiguientePaso2,
     // Paso 3
     previsualizacion,
+    step3Error,
+    handleDismissStep3Error,
+    isFinalizing,
+    evaluacionCreadaId,
+    handleAnteriorPaso3,
+    handleCancelarPaso3,
+    handleFinalizar,
+    isExportModalOpen,
+    isExportingExcel,
+    exportError,
+    handleDismissExportError,
+    handleSiExportar,
+    handleNoExportar,
   };
 }

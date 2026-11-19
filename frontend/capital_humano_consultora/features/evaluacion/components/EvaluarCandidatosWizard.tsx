@@ -2,11 +2,12 @@
 
 import React from 'react';
 import { Stepper } from '@/components/molecules/Stepper';
-import { Button } from '@/components/ui/Button';
 import { useEvaluacionWizard } from '../hooks/useEvaluacionWizard';
 import { PasoCandidatos } from './PasoCandidatos';
 import { PasoPuesto } from './PasoPuesto';
+import { PasoClavesConfirmacion } from './PasoClavesConfirmacion';
 import { ModalCompetenciasNoEvaluables } from './ModalCompetenciasNoEvaluables';
+import { ModalExportarExcel } from './ModalExportarExcel';
 
 const WIZARD_STEPS = [
   { id: 'candidatos', label: 'Candidatos' },
@@ -83,19 +84,18 @@ export const EvaluarCandidatosWizard: React.FC = () => {
         />
       )}
 
-      {/* Paso 3: se incorpora en el siguiente paso */}
-      {wizard.currentStep === 2 && (
-        <div className="bg-white p-8 rounded-2xl border border-[#D0BCFF] shadow-xs flex flex-col gap-4 items-start">
-          <p className="text-sm text-[#757575]">Paso 3 en construcción.</p>
-          <Button
-            type="button"
-            variant="secondary"
-            leftIcon="arrow_back"
-            onClick={() => wizard.setCurrentStep(1)}
-          >
-            Volver al Paso 2
-          </Button>
-        </div>
+      {/* Paso 3: Claves de ingreso y finalización */}
+      {wizard.currentStep === 2 && wizard.previsualizacion && (
+        <PasoClavesConfirmacion
+          previsualizacion={wizard.previsualizacion}
+          step3Error={wizard.step3Error}
+          onDismissStep3Error={wizard.handleDismissStep3Error}
+          isFinalizing={wizard.isFinalizing}
+          isCreated={wizard.evaluacionCreadaId !== null}
+          onAnterior={wizard.handleAnteriorPaso3}
+          onCancelar={wizard.handleCancelarPaso3}
+          onFinalizar={wizard.handleFinalizar}
+        />
       )}
 
       {/* Modal Flujo 9.A: Competencias sin factores válidos */}
@@ -104,6 +104,16 @@ export const EvaluarCandidatosWizard: React.FC = () => {
         mensaje={wizard.modal9A.mensaje}
         competencias={wizard.modal9A.competencias}
         onAceptar={wizard.handleAceptarModal9A}
+      />
+
+      {/* Modal Pasos 13-14 / 14.A: Evaluación creada y exportación a Excel */}
+      <ModalExportarExcel
+        isOpen={wizard.isExportModalOpen}
+        isExporting={wizard.isExportingExcel}
+        exportError={wizard.exportError}
+        onDismissExportError={wizard.handleDismissExportError}
+        onConfirmarSi={wizard.handleSiExportar}
+        onRechazarNo={wizard.handleNoExportar}
       />
     </div>
   );
