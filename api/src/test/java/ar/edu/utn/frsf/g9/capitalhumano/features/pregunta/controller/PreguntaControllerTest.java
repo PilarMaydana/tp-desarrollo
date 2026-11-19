@@ -2,6 +2,7 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.controller;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.OpcionRespuestaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaModificacionDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.gestor.GestorPregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
@@ -21,6 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -306,15 +309,17 @@ class PreguntaControllerTest {
     @DisplayName("PUT /api/preguntas/{id} con datos válidos retorna 200 OK y la pregunta modificada")
     void modificarPregunta_valida_retorna200() throws Exception {
         PreguntaDTO modificada = new PreguntaDTO(
-                1L, "Competencias Técnicas", "Desarrollo", "FAC-01",
-                "Nombre Modificado", "Enunciado Modificado", "Desc",
+                1L, "COMPETENCIAS TÉCNICAS", "DESARROLLO", "FAC-01",
+                "NOMBRE MODIFICADO", "ENUNCIADO MODIFICADO", "DESC",
                 List.of(
-                        new OpcionRespuestaDTO("Op 1", "Desc", 1.0),
-                        new OpcionRespuestaDTO("Op 2", "Desc", 0.0)
+                        new OpcionRespuestaDTO(10L, "OP 1", "DESC 1", 1, 4.0),
+                        new OpcionRespuestaDTO(11L, "OP 2", "DESC 2", 2, 6.0)
                 )
         );
+        modificada.setCompetenciaId(5L);
+        modificada.setFactorId(3L);
 
-        when(gestorPregunta.modificarPregunta(eq(1L), any())).thenReturn(modificada);
+        when(gestorPregunta.modificarPregunta(eq(1L), any(PreguntaModificacionDTO.class))).thenReturn(modificada);
 
         String json = """
                 {
@@ -322,8 +327,8 @@ class PreguntaControllerTest {
                   "enunciado": "Enunciado Modificado",
                   "descripcion": "Desc",
                   "opciones": [
-                    { "nombre": "Op 1", "descripcion": "Desc", "ponderacion": 1.0 },
-                    { "nombre": "Op 2", "descripcion": "Desc", "ponderacion": 0.0 }
+                    { "orden": 1, "nombre": "Op 1", "descripcion": "Desc 1", "ponderacion": 4.0 },
+                    { "orden": 2, "nombre": "Op 2", "descripcion": "Desc 2", "ponderacion": 6.0 }
                   ]
                 }
                 """;
@@ -334,13 +339,80 @@ class PreguntaControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.nombre").value("Nombre Modificado"));
+                .andExpect(jsonPath("$.competenciaId").value(5))
+                .andExpect(jsonPath("$.competencia").value("COMPETENCIAS TÉCNICAS"))
+                .andExpect(jsonPath("$.factorId").value(3))
+                .andExpect(jsonPath("$.factor").value("DESARROLLO"))
+                .andExpect(jsonPath("$.nombre").value("NOMBRE MODIFICADO"))
+                .andExpect(jsonPath("$.opciones", hasSize(2)));
+    }
+
+    @Test
+    @DisplayName("PUT /api/preguntas/{id} con campos vacíos y menos de 2 opciones retorna 400 VALIDACION con todos los detalles")
+    void modificarPregunta_camposVaciosYMenosDeDosOpciones_retorna400ConTodosLosDetalles() throws Exception {
+        String jsonInvalido = """
+                {
+                  "nombre": "",
+                  "enunciado": "   ",
+                  "opciones": [
+                    { "orden": 1, "nombre": "UNICA", "descripcion": "DESC", "ponderacion": 10.0 }
+                  ]
+                }
+                """;
+
+        mockMvc.perform(put("/api/preguntas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonInvalido)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.codigo").value("VALIDACION"))
+                .andExpect(jsonPath("$.detalles", hasSize(3)))
+                .andExpect(jsonPath("$.detalles[*].campo", containsInAnyOrder("nombre", "enunciado", "opciones")));
+
+        verify(gestorPregunta, never()).modificarPregunta(any(), any());
+    }
+
+    @Test
+    @DisplayName("PUT /api/preguntas/{id} con exceso de longitud y ponderaciones inválidas retorna 400 VALIDACION con todos los detalles")
+    void modificarPregunta_excesoLongitudYPonderacionesInvalidas_retorna400ConTodosLosDetalles() throws Exception {
+        String nombreLargo = "A".repeat(256);
+        String enunciadoLargo = "B".repeat(1001);
+        String descripcionLarga = "C".repeat(501);
+
+        String jsonInvalido = """
+                {
+                  "nombre": "%s",
+                  "enunciado": "%s",
+                  "descripcion": "%s",
+                  "opciones": [
+                    { "orden": 1, "nombre": "OP 1", "descripcion": "DESC 1", "ponderacion": -1.0 },
+                    { "orden": 2, "nombre": "OP 2", "descripcion": "DESC 2", "ponderacion": null }
+                  ]
+                }
+                """.formatted(nombreLargo, enunciadoLargo, descripcionLarga);
+
+        mockMvc.perform(put("/api/preguntas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonInvalido)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.codigo").value("VALIDACION"))
+                .andExpect(jsonPath("$.detalles", hasSize(5)))
+                .andExpect(jsonPath("$.detalles[*].campo", hasItem("nombre")))
+                .andExpect(jsonPath("$.detalles[*].campo", hasItem("enunciado")))
+                .andExpect(jsonPath("$.detalles[*].campo", hasItem("descripcion")))
+                .andExpect(jsonPath("$.detalles[*].campo", hasItem("opciones[0].ponderacion")))
+                .andExpect(jsonPath("$.detalles[*].campo", hasItem("opciones[1].ponderacion")));
+
+        verify(gestorPregunta, never()).modificarPregunta(any(), any());
     }
 
     @Test
     @DisplayName("PUT /api/preguntas/{id} inexistente retorna 404 Not Found")
     void modificarPregunta_inexistente_retorna404() throws Exception {
-        when(gestorPregunta.modificarPregunta(eq(99L), any()))
+        when(gestorPregunta.modificarPregunta(eq(99L), any(PreguntaModificacionDTO.class)))
                 .thenThrow(new RecursoNoEncontradoException("Pregunta", 99L));
 
         String json = """
@@ -348,8 +420,8 @@ class PreguntaControllerTest {
                   "nombre": "Nombre",
                   "enunciado": "Enunciado",
                   "opciones": [
-                    { "nombre": "Op 1", "ponderacion": 1.0 },
-                    { "nombre": "Op 2", "ponderacion": 0.0 }
+                    { "orden": 1, "nombre": "Op 1", "ponderacion": 5.0 },
+                    { "orden": 2, "nombre": "Op 2", "ponderacion": 5.0 }
                   ]
                 }
                 """;
@@ -359,7 +431,62 @@ class PreguntaControllerTest {
                         .content(json)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404));
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.codigo").value("RECURSO_NO_ENCONTRADO"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/preguntas/{id} con nombre o enunciado duplicado retorna 409 Conflict")
+    void modificarPregunta_duplicada_retorna409() throws Exception {
+        when(gestorPregunta.modificarPregunta(eq(1L), any(PreguntaModificacionDTO.class)))
+                .thenThrow(new RecursoDuplicadoException("Ya existe otra pregunta con el nombre 'PATRONES DE DISEÑO' para el factor seleccionado"));
+
+        String json = """
+                {
+                  "nombre": "PATRONES DE DISEÑO",
+                  "enunciado": "¿Nuevo enunciado?",
+                  "opciones": [
+                    { "orden": 1, "nombre": "Op 1", "ponderacion": 5.0 },
+                    { "orden": 2, "nombre": "Op 2", "ponderacion": 5.0 }
+                  ]
+                }
+                """;
+
+        mockMvc.perform(put("/api/preguntas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.codigo").value("RECURSO_DUPLICADO"))
+                .andExpect(jsonPath("$.mensaje").value("Ya existe otra pregunta con el nombre 'PATRONES DE DISEÑO' para el factor seleccionado"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/preguntas/{id} con suma de ponderaciones distinta de 10 retorna 422 Unprocessable Entity")
+    void modificarPregunta_sumaDistintaDeDiez_retorna422() throws Exception {
+        when(gestorPregunta.modificarPregunta(eq(1L), any(PreguntaModificacionDTO.class)))
+                .thenThrow(new ReglaNegocioException("La suma de las ponderaciones de las opciones de respuesta debe ser exactamente 10 puntos (suma actual: 8)"));
+
+        String json = """
+                {
+                  "nombre": "Pregunta Modificada",
+                  "enunciado": "¿Enunciado modificado?",
+                  "opciones": [
+                    { "orden": 1, "nombre": "Op 1", "ponderacion": 4.0 },
+                    { "orden": 2, "nombre": "Op 2", "ponderacion": 4.0 }
+                  ]
+                }
+                """;
+
+        mockMvc.perform(put("/api/preguntas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.codigo").value("REGLA_NEGOCIO"))
+                .andExpect(jsonPath("$.mensaje").value("La suma de las ponderaciones de las opciones de respuesta debe ser exactamente 10 puntos (suma actual: 8)"));
     }
 
     @Test

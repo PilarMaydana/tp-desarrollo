@@ -9,6 +9,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dao.PreguntaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.OpcionRespuestaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaFiltroDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.dto.PreguntaModificacionDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.OpcionRespuesta;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.Pregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
@@ -339,33 +340,195 @@ class GestorPreguntaTest {
     }
 
     @Test
-    @DisplayName("modificarPregunta: modifica los datos y opciones de una pregunta existente")
+    @DisplayName("modificarPregunta: modifica los datos y opciones de una pregunta existente sin alterar factor ni competencia")
     void modificarPregunta_exitoso() {
         Competencia comp = new Competencia(1L, "TEC-01", "COMPETENCIAS TÉCNICAS", "DESC");
         Factor factor = new Factor(1L, "FAC-01", "DESARROLLO", "DESC", 1, comp);
         Pregunta existente = new Pregunta(1L, "NOMBRE VIEJO", "ENUNCIADO VIEJO", "DESC VIEJA", factor);
+        existente.addOpcion(new OpcionRespuesta(10L, existente, "VIEJA 1", "DESC", 1, 5.0));
+        existente.addOpcion(new OpcionRespuesta(11L, existente, "VIEJA 2", "DESC", 2, 5.0));
 
         when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
         when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "NOMBRE NUEVO", 1L)).thenReturn(false);
         when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "ENUNCIADO NUEVO", 1L)).thenReturn(false);
         when(preguntaDAO.save(any(Pregunta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        PreguntaDTO actualizacion = new PreguntaDTO(
-                null, null, null, null, "NOMBRE NUEVO", "ENUNCIADO NUEVO", "DESC NUEVA",
+        PreguntaModificacionDTO actualizacion = new PreguntaModificacionDTO(
+                "NOMBRE NUEVO",
+                "ENUNCIADO NUEVO",
+                "DESC NUEVA",
                 List.of(
-                        new OpcionRespuestaDTO("Opcion 1", "Desc 1", 1, 1.0),
-                        new OpcionRespuestaDTO("Opcion 2", "Desc 2", 2, 0.0)
+                        new OpcionRespuestaDTO("OPCION 1", "DESC 1", 1, 3.33),
+                        new OpcionRespuestaDTO("OPCION 2", "DESC 2", 2, 3.33),
+                        new OpcionRespuestaDTO("OPCION 3", "DESC 3", 3, 3.34)
                 )
         );
 
         PreguntaDTO resultado = gestorPregunta.modificarPregunta(1L, actualizacion);
 
+        assertThat(resultado.getId()).isEqualTo(1L);
         assertThat(resultado.getNombre()).isEqualTo("NOMBRE NUEVO");
         assertThat(resultado.getEnunciado()).isEqualTo("ENUNCIADO NUEVO");
         assertThat(resultado.getDescripcion()).isEqualTo("DESC NUEVA");
-        assertThat(resultado.getOpciones()).hasSize(2);
+        assertThat(resultado.getCompetenciaId()).isEqualTo(1L);
+        assertThat(resultado.getCompetencia()).isEqualTo("COMPETENCIAS TÉCNICAS");
+        assertThat(resultado.getFactorId()).isEqualTo(1L);
+        assertThat(resultado.getFactor()).isEqualTo("DESARROLLO");
+        assertThat(resultado.getOpciones()).hasSize(3);
+        assertThat(resultado.getOpciones().get(0).getPonderacion()).isEqualTo(3.33);
+        assertThat(resultado.getOpciones().get(2).getPonderacion()).isEqualTo(3.34);
 
+        verify(preguntaDAO).flush();
         verify(preguntaDAO).save(existente);
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: normaliza datos literales con trim y mayúsculas antes de validar duplicados y guardar")
+    void modificarPregunta_normalizaTrimYMayusculas() {
+        Factor factor = crearFactorPrueba();
+        Pregunta existente = new Pregunta(5L, "ORIGINAL", "¿ORIGINAL?", "DESC", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(5L)).thenReturn(Optional.of(existente));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "PREGUNTA NORMALIZADA", 5L)).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "¿ENUNCIADO EN MINÚSCULAS?", 5L)).thenReturn(false);
+        when(preguntaDAO.save(any(Pregunta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PreguntaModificacionDTO actualizacion = new PreguntaModificacionDTO(
+                "  pregunta normalizada  ",
+                "  ¿enunciado en minúsculas?  ",
+                "  descripción opcional  ",
+                List.of(
+                        new OpcionRespuestaDTO("  nunca  ", "  jamás ocurre  ", 1, 0.0),
+                        new OpcionRespuestaDTO("  siempre  ", "  ocurre siempre  ", 2, 10.0)
+                )
+        );
+
+        PreguntaDTO resultado = gestorPregunta.modificarPregunta(5L, actualizacion);
+
+        verify(preguntaDAO).existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "PREGUNTA NORMALIZADA", 5L);
+        verify(preguntaDAO).existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "¿ENUNCIADO EN MINÚSCULAS?", 5L);
+
+        assertThat(existente.getNombre()).isEqualTo("PREGUNTA NORMALIZADA");
+        assertThat(existente.getEnunciado()).isEqualTo("¿ENUNCIADO EN MINÚSCULAS?");
+        assertThat(existente.getDescripcion()).isEqualTo("DESCRIPCIÓN OPCIONAL");
+        assertThat(existente.getOpciones().get(0).getNombre()).isEqualTo("NUNCA");
+        assertThat(existente.getOpciones().get(0).getDescripcion()).isEqualTo("JAMÁS OCURRE");
+        assertThat(existente.getOpciones().get(1).getNombre()).isEqualTo("SIEMPRE");
+        assertThat(existente.getOpciones().get(1).getDescripcion()).isEqualTo("OCURRE SIEMPRE");
+        assertThat(resultado.getNombre()).isEqualTo("PREGUNTA NORMALIZADA");
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: permite guardar sin cambiar nombre ni enunciado (no da duplicado contra sí misma)")
+    void modificarPregunta_sinCambiarNombreNiEnunciado_noEsDuplicado() {
+        Factor factor = crearFactorPrueba();
+        Pregunta existente = new Pregunta(7L, "MISMO NOMBRE", "¿MISMO ENUNCIADO?", "DESC VIEJA", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(7L)).thenReturn(Optional.of(existente));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "MISMO NOMBRE", 7L)).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "¿MISMO ENUNCIADO?", 7L)).thenReturn(false);
+        when(preguntaDAO.save(any(Pregunta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PreguntaModificacionDTO actualizacion = new PreguntaModificacionDTO(
+                "mismo nombre",
+                "¿mismo enunciado?",
+                "nueva descripción",
+                List.of(
+                        new OpcionRespuestaDTO("OPCION A", "DESC A", 1, 4.0),
+                        new OpcionRespuestaDTO("OPCION B", "DESC B", 2, 6.0)
+                )
+        );
+
+        PreguntaDTO resultado = gestorPregunta.modificarPregunta(7L, actualizacion);
+
+        assertThat(resultado.getNombre()).isEqualTo("MISMO NOMBRE");
+        assertThat(resultado.getEnunciado()).isEqualTo("¿MISMO ENUNCIADO?");
+        assertThat(resultado.getDescripcion()).isEqualTo("NUEVA DESCRIPCIÓN");
+        verify(preguntaDAO).save(existente);
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: lanza 409 Conflict si otra pregunta del mismo factor tiene el mismo nombre")
+    void modificarPregunta_duplicadoPorNombre_lanza409() {
+        Factor factor = crearFactorPrueba();
+        Pregunta existente = new Pregunta(1L, "NOMBRE ORIGINAL", "¿ENUNCIADO ORIGINAL?", "DESC", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "NOMBRE REPETIDO", 1L)).thenReturn(true);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "¿ENUNCIADO UNICO?", 1L)).thenReturn(false);
+
+        PreguntaModificacionDTO dto = new PreguntaModificacionDTO(
+                "  nombre repetido ",
+                "¿enunciado unico?",
+                null,
+                List.of(
+                        new OpcionRespuestaDTO("OP 1", "DESC 1", 1, 5.0),
+                        new OpcionRespuestaDTO("OP 2", "DESC 2", 2, 5.0)
+                )
+        );
+
+        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(1L, dto))
+                .isInstanceOf(RecursoDuplicadoException.class)
+                .hasMessageContaining("nombre")
+                .hasMessageNotContaining("enunciado");
+
+        verify(preguntaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: lanza 409 Conflict si otra pregunta del mismo factor tiene el mismo enunciado")
+    void modificarPregunta_duplicadoPorEnunciado_lanza409() {
+        Factor factor = crearFactorPrueba();
+        Pregunta existente = new Pregunta(1L, "NOMBRE ORIGINAL", "¿ENUNCIADO ORIGINAL?", "DESC", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "NOMBRE UNICO", 1L)).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "¿ENUNCIADO REPETIDO?", 1L)).thenReturn(true);
+
+        PreguntaModificacionDTO dto = new PreguntaModificacionDTO(
+                "nombre unico",
+                "  ¿enunciado repetido?  ",
+                null,
+                List.of(
+                        new OpcionRespuestaDTO("OP 1", "DESC 1", 1, 5.0),
+                        new OpcionRespuestaDTO("OP 2", "DESC 2", 2, 5.0)
+                )
+        );
+
+        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(1L, dto))
+                .isInstanceOf(RecursoDuplicadoException.class)
+                .hasMessageContaining("enunciado")
+                .hasMessageNotContaining("nombre");
+
+        verify(preguntaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: lanza 409 Conflict informando ambos si nombre y enunciado están duplicados")
+    void modificarPregunta_duplicadoNombreYEnunciado_lanza409ConAmbos() {
+        Factor factor = crearFactorPrueba();
+        Pregunta existente = new Pregunta(1L, "NOMBRE ORIGINAL", "¿ENUNCIADO ORIGINAL?", "DESC", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "NOMBRE REPETIDO", 1L)).thenReturn(true);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "¿ENUNCIADO REPETIDO?", 1L)).thenReturn(true);
+
+        PreguntaModificacionDTO dto = new PreguntaModificacionDTO(
+                "nombre repetido",
+                "¿enunciado repetido?",
+                null,
+                List.of(
+                        new OpcionRespuestaDTO("OP 1", "DESC 1", 1, 5.0),
+                        new OpcionRespuestaDTO("OP 2", "DESC 2", 2, 5.0)
+                )
+        );
+
+        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(1L, dto))
+                .isInstanceOf(RecursoDuplicadoException.class)
+                .hasMessageContaining("nombre")
+                .hasMessageContaining("enunciado");
+
+        verify(preguntaDAO, never()).save(any());
     }
 
     @Test
@@ -373,11 +536,92 @@ class GestorPreguntaTest {
     void modificarPregunta_noExiste_lanza404() {
         when(preguntaDAO.findByIdAndEliminadoFalse(99L)).thenReturn(Optional.empty());
 
-        PreguntaDTO dto = new PreguntaDTO(null, null, null, null, "A", "B", "C",
-                List.of(new OpcionRespuestaDTO("A", "B", 1.0), new OpcionRespuestaDTO("C", "D", 0.0)));
+        PreguntaModificacionDTO dto = new PreguntaModificacionDTO(
+                "A",
+                "B",
+                "C",
+                List.of(new OpcionRespuestaDTO("A", "B", 5.0), new OpcionRespuestaDTO("C", "D", 5.0))
+        );
 
         assertThatThrownBy(() -> gestorPregunta.modificarPregunta(99L, dto))
                 .isInstanceOf(RecursoNoEncontradoException.class);
+
+        verify(preguntaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: lanza 422 ReglaNegocioException si la suma de ponderaciones no es exactamente 10")
+    void modificarPregunta_sumaDistintaDeDiez_lanza422() {
+        Factor factor = crearFactorPrueba();
+        Pregunta existente = new Pregunta(1L, "NOMBRE", "¿ENUNCIADO?", "DESC", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
+        when(preguntaDAO.existsByFactorIdAndNombreIgnoreCaseAndIdNotAndEliminadoFalse(1L, "NOMBRE", 1L)).thenReturn(false);
+        when(preguntaDAO.existsByFactorIdAndEnunciadoIgnoreCaseAndIdNotAndEliminadoFalse(1L, "¿ENUNCIADO?", 1L)).thenReturn(false);
+
+        PreguntaModificacionDTO dto = new PreguntaModificacionDTO(
+                "NOMBRE",
+                "¿ENUNCIADO?",
+                "DESC",
+                List.of(
+                        new OpcionRespuestaDTO("OP 1", "DESC 1", 1, 4.5),
+                        new OpcionRespuestaDTO("OP 2", "DESC 2", 2, 4.0)
+                )
+        );
+
+        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(1L, dto))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("10 puntos")
+                .hasMessageContaining("8.5");
+
+        verify(preguntaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: lanza ReglaNegocioException si alguna ponderación es negativa")
+    void modificarPregunta_ponderacionNegativa_lanzaExcepcion() {
+        Factor factor = crearFactorPrueba();
+        Pregunta existente = new Pregunta(1L, "NOMBRE", "¿ENUNCIADO?", "DESC", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
+
+        PreguntaModificacionDTO dto = new PreguntaModificacionDTO(
+                "NOMBRE",
+                "¿ENUNCIADO?",
+                "DESC",
+                List.of(
+                        new OpcionRespuestaDTO("OP 1", "DESC 1", 1, -2.0),
+                        new OpcionRespuestaDTO("OP 2", "DESC 2", 2, 12.0)
+                )
+        );
+
+        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(1L, dto))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("mayor o igual a cero");
+
+        verify(preguntaDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("modificarPregunta: lanza ReglaNegocioException si se envían menos de 2 opciones")
+    void modificarPregunta_menosDeDosOpciones_lanzaExcepcion() {
+        Factor factor = crearFactorPrueba();
+        Pregunta existente = new Pregunta(1L, "NOMBRE", "¿ENUNCIADO?", "DESC", factor);
+
+        when(preguntaDAO.findByIdAndEliminadoFalse(1L)).thenReturn(Optional.of(existente));
+
+        PreguntaModificacionDTO dto = new PreguntaModificacionDTO(
+                "NOMBRE",
+                "¿ENUNCIADO?",
+                "DESC",
+                List.of(new OpcionRespuestaDTO("OP UNICA", "DESC", 1, 10.0))
+        );
+
+        assertThatThrownBy(() -> gestorPregunta.modificarPregunta(1L, dto))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("al menos 2 opciones");
+
+        verify(preguntaDAO, never()).save(any());
     }
 
     @Test
