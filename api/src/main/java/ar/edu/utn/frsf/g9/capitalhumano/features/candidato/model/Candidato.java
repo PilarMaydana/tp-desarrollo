@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Entidad JPA que representa a un Candidato en el sistema de selección.
@@ -29,8 +30,8 @@ public class Candidato extends EntidadAuditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nro_candidato", unique = true)
-    private Long nroCandidato;
+    @Column(name = "nro_candidato", length = 50, unique = true)
+    private String nroCandidato;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_documento", length = 10, nullable = false)
@@ -48,8 +49,9 @@ public class Candidato extends EntidadAuditable {
     @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "genero", length = 10)
-    private String genero;
+    private Genero genero;
 
     @Column(name = "nacionalidad", length = 50)
     private String nacionalidad;
@@ -63,7 +65,7 @@ public class Candidato extends EntidadAuditable {
     public Candidato() {
     }
 
-    public Candidato(Long id, Long nroCandidato, TipoDocumento tipoDocumento, String nroDocumento,
+    public Candidato(Long id, String nroCandidato, TipoDocumento tipoDocumento, String nroDocumento,
                      String apellido, String nombre, String email) {
         this.id = id;
         this.nroCandidato = nroCandidato;
@@ -74,6 +76,47 @@ public class Candidato extends EntidadAuditable {
         this.email = email;
     }
 
+    public Candidato(Long id, Long nroCandidato, TipoDocumento tipoDocumento, String nroDocumento,
+                     String apellido, String nombre, String email) {
+        this(id, nroCandidato != null ? String.valueOf(nroCandidato) : null, tipoDocumento, nroDocumento, apellido, nombre, email);
+    }
+
+    /**
+     * Aplica la baja lógica al candidato registrando fecha y usuario de auditoría.
+     *
+     * @param usuarioEliminacion identificador del usuario que ejecuta la eliminación
+     */
+    public void eliminar(Long usuarioEliminacion) {
+        setEliminado(true);
+        setFechaEliminacion(LocalDateTime.now());
+        setUsuarioEliminacion(usuarioEliminacion);
+    }
+
+    /**
+     * Aplica la baja lógica al candidato a partir del identificador en formato texto.
+     *
+     * @param usuario identificador del usuario
+     */
+    public void eliminar(String usuario) {
+        Long idUsuario = null;
+        if (usuario != null) {
+            try {
+                idUsuario = Long.parseLong(usuario);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        eliminar(idUsuario);
+    }
+
+    /**
+     * Reactiva a un candidato previamente dado de baja lógica.
+     */
+    public void reactivar() {
+        setEliminado(false);
+        setFechaEliminacion(null);
+        setUsuarioEliminacion(null);
+    }
+
     public Long getId() {
         return id;
     }
@@ -82,11 +125,11 @@ public class Candidato extends EntidadAuditable {
         this.id = id;
     }
 
-    public Long getNroCandidato() {
+    public String getNroCandidato() {
         return nroCandidato;
     }
 
-    public void setNroCandidato(Long nroCandidato) {
+    public void setNroCandidato(String nroCandidato) {
         this.nroCandidato = nroCandidato;
     }
 
@@ -130,11 +173,11 @@ public class Candidato extends EntidadAuditable {
         this.fechaNacimiento = fechaNacimiento;
     }
 
-    public String getGenero() {
+    public Genero getGenero() {
         return genero;
     }
 
-    public void setGenero(String genero) {
+    public void setGenero(Genero genero) {
         this.genero = genero;
     }
 

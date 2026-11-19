@@ -23,6 +23,7 @@ export const ROUTES = {
     FACTORES_NUEVO: '/factores/nuevo',
     OPCIONES_RESPUESTA: '/opciones-respuesta',
     OPCIONES_RESPUESTA_NUEVA: '/opciones-respuesta/nueva',
+    CANDIDATOS_IMPORTAR: '/candidatos/importar',
   },
   CANDIDATO: {
     CUESTIONARIO: '/candidato/cuestionario',
