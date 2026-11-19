@@ -36,3 +36,8 @@ spring:
 springdoc:
   swagger-ui:
     enabled: true
+
+capitalhumano:
+  evaluacion:
+    tiempo-maximo-minutos: 60
+    cantidad-preguntas-por-bloque: 5

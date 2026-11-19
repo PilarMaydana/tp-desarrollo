@@ -71,11 +71,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ReglaNegocioException.class)
     public ResponseEntity<ApiError> handleReglaNegocio(
             ReglaNegocioException ex, HttpServletRequest request) {
-        ApiError error = ApiError.of(
+        List<ApiError.CampoError> detalles = ex.getDetalles().stream()
+                .map(detalle -> new ApiError.CampoError(detalle.campo(), detalle.mensaje()))
+                .toList();
+
+        ApiError error = new ApiError(
+                Instant.now(),
                 HttpStatus.UNPROCESSABLE_ENTITY.value(),
                 ex.getCodigo(),
                 ex.getMessage(),
-                request.getRequestURI()
+                request.getRequestURI(),
+                detalles
         );
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }

@@ -2,7 +2,10 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dao;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.Puesto;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,5 +44,24 @@ public interface PuestoDAO extends JpaRepository<Puesto, Long> {
      * @return Optional con el puesto encontrado, o vacío
      */
     Optional<Puesto> findByNombre(String nombre);
+
+    /**
+     * Lista todos los puestos activos ordenados alfabéticamente por nombre.
+     *
+     * @return lista de puestos activos
+     */
+    List<Puesto> findByEliminadoFalseOrderByNombreAsc();
+
+    /**
+     * Obtiene un puesto activo por su ID con sus características y competencias asociadas cargadas.
+     *
+     * @param id identificador del puesto
+     * @return Optional con el puesto encontrado, o vacío
+     */
+    @Query("SELECT DISTINCT p FROM Puesto p " +
+           "LEFT JOIN FETCH p.caracteristicas cp " +
+           "LEFT JOIN FETCH cp.competencia c " +
+           "WHERE p.id = :id AND p.eliminado = false")
+    Optional<Puesto> findByIdActivaConCaracteristicas(@Param("id") Long id);
 }
 
