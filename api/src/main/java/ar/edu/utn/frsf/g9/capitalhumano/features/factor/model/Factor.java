@@ -1,6 +1,7 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.factor.model;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.model.Competencia;
+import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.Pregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.model.EntidadAuditable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,8 +11,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Entidad JPA que representa un Factor evaluable asociado a una Competencia (CU 017).
@@ -44,6 +49,9 @@ public class Factor extends EntidadAuditable {
     @JoinColumn(name = "competencia_id", nullable = false)
     private Competencia competencia;
 
+    @OneToMany(mappedBy = "factor", fetch = FetchType.LAZY)
+    private List<Pregunta> preguntas = new ArrayList<>();
+
     public Factor() {
         this.setEliminado(false);
     }
@@ -56,6 +64,36 @@ public class Factor extends EntidadAuditable {
         this.nroOrden = nroOrden;
         this.competencia = competencia;
         this.setEliminado(false);
+    }
+
+    /**
+     * Verifica que el factor posea al menos 2 preguntas activas ({@code eliminado = false}).
+     *
+     * @return {@code true} si posee 2 o más preguntas activas, {@code false} en caso contrario
+     */
+    public boolean tieneMinimoDosPreguntas() {
+        return getPreguntasActivas().size() >= 2;
+    }
+
+    /**
+     * Retorna las preguntas activas ({@code eliminado = false}) asociadas al factor.
+     *
+     * @return lista inmutable de preguntas activas
+     */
+    public List<Pregunta> getPreguntasActivas() {
+        if (preguntas == null || preguntas.isEmpty()) {
+            return List.of();
+        }
+        return preguntas.stream()
+                .filter(p -> p != null && !Boolean.TRUE.equals(p.getEliminado()))
+                .toList();
+    }
+
+    public void addPregunta(Pregunta pregunta) {
+        if (pregunta != null) {
+            preguntas.add(pregunta);
+            pregunta.setFactor(this);
+        }
     }
 
     public Long getId() {
@@ -104,6 +142,14 @@ public class Factor extends EntidadAuditable {
 
     public void setCompetencia(Competencia competencia) {
         this.competencia = competencia;
+    }
+
+    public List<Pregunta> getPreguntas() {
+        return preguntas;
+    }
+
+    public void setPreguntas(List<Pregunta> preguntas) {
+        this.preguntas = preguntas != null ? preguntas : new ArrayList<>();
     }
 }
 

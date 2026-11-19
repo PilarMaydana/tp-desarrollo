@@ -2,7 +2,10 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.factor.dao;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.model.Factor;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,4 +70,17 @@ public interface FactorDAO extends JpaRepository<Factor, Long> {
      * @return lista de factores asociados
      */
     List<Factor> findByCompetenciaCodigoOrderByNroOrdenAsc(String codigoCompetencia);
+
+    /**
+     * Obtiene todos los factores activos pertenecientes a las competencias indicadas,
+     * cargando sus preguntas asociadas para evaluación de suficiencia y selección.
+     *
+     * @param competenciaIds identificadores de las competencias
+     * @return lista de factores activos con sus preguntas
+     */
+    @Query("SELECT DISTINCT f FROM Factor f " +
+           "LEFT JOIN FETCH f.preguntas p " +
+           "WHERE f.competencia.id IN :competenciaIds AND f.eliminado = false " +
+           "ORDER BY f.competencia.id ASC, f.nroOrden ASC")
+    List<Factor> findActivosConPreguntasByCompetenciaIdIn(@Param("competenciaIds") Collection<Long> competenciaIds);
 }
