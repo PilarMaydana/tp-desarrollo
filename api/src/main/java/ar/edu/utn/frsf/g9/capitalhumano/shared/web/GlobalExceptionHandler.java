@@ -1,6 +1,8 @@
 package ar.edu.utn.frsf.g9.capitalhumano.shared.web;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.auth.exception.AutenticacionException;
+import ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.dto.ErrorImportacionDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.exception.CsvImportacionException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
@@ -14,6 +16,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
 import java.util.List;
@@ -106,6 +109,22 @@ public class GlobalExceptionHandler {
                 "CUERPO_INVALIDO",
                 "El cuerpo de la solicitud es invalido o no pudo ser interpretado",
                 request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(CsvImportacionException.class)
+    public ResponseEntity<ErrorImportacionDTO> handleCsvImportacion(
+            CsvImportacionException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.toDTO());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorImportacionDTO> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException ex) {
+        ErrorImportacionDTO error = new ErrorImportacionDTO(
+                "El archivo seleccionado supera el tamaño máximo permitido.",
+                List.of(new ErrorImportacionDTO.DetalleErrorFilaDTO(null, "file", "Tamaño máximo de archivo excedido."))
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }

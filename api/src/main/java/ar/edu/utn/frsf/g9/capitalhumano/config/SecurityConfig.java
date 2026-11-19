@@ -46,6 +46,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/preguntas/**").permitAll()
                         // TODO CU 01: exigir autenticación
                         .requestMatchers("/api/opciones-respuesta/**").permitAll()
+                        // TODO CU 01: exigir autenticación y rol CONSULTOR
+                        .requestMatchers("/api/candidatos/**").permitAll()
                         .anyRequest().permitAll()
                 );
 

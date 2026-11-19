@@ -1,0 +1,90 @@
+### ==============================================================================
+### CU006 - Importar Candidatos (Pruebas sin UI)
+### ==============================================================================
+
+@baseUrl = http://localhost:8080/api
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTiIsInJvbCI6IkNPTlNVTFRPUiIsInVzdWFyaW9JZCI6MSwiaWF0IjoxNzg5MDAwMDAwLCJleHAiOjE5ODkwMDAwMDB9.signature
+
+### ------------------------------------------------------------------------------
+### 1. Importación de Candidatos (Flujo Principal - Éxito)
+### Se envía un archivo CSV válido con separador ';' y encabezados requeridos.
+### Respuesta esperada: HTTP 200 OK con estadísticas de candidatos.
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/candidatos/importar
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="candidatos_validos.csv"
+Content-Type: text/csv
+
+Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado
+CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False
+CAND-002;GOMEZ;MARIA;38987654;DNI;1995-11-22;M;ARGENTINA;maria.gomez@mail.com;TERCIARIO;False
+CAND-003;LOPEZ;CARLOS;29456789;LE;1982-03-08;H;ARGENTINA;carlos.lopez@mail.com;UNIVERSITARIO;True
+--WebAppBoundary--
+
+### ------------------------------------------------------------------------------
+### 2. Error: Separador incorrecto (Coma ',' en lugar de punto y coma ';')
+### Respuesta esperada: HTTP 400 Bad Request
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/candidatos/importar
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="candidatos_comas.csv"
+Content-Type: text/csv
+
+Nro candidato,Apellido,Nombre,Nro documento,Tipo documento,Fecha de nacimiento,Género,Nacionalidad,Email,Escolaridad,Eliminado
+CAND-001,PEREZ,JUAN,35123456,DNI,1990-05-14,H,ARGENTINA,juan.perez@mail.com,UNIVERSITARIO,False
+--WebAppBoundary--
+
+### ------------------------------------------------------------------------------
+### 3. Error: Extensión no permitida (.txt en lugar de .csv)
+### Respuesta esperada: HTTP 400 Bad Request
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/candidatos/importar
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="candidatos.txt"
+Content-Type: text/plain
+
+Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado
+CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False
+--WebAppBoundary--
+
+### ------------------------------------------------------------------------------
+### 4. Error: Nro candidato duplicado dentro del mismo archivo
+### Respuesta esperada: HTTP 400 Bad Request detallando filas duplicadas
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/candidatos/importar
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="duplicados.csv"
+Content-Type: text/csv
+
+Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado
+CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False
+CAND-001;PEREZ;JUAN CARLOS;35123456;DNI;1990-05-14;H;ARGENTINA;otro@mail.com;UNIVERSITARIO;False
+--WebAppBoundary--
+
+### ------------------------------------------------------------------------------
+### 5. Error: Valores inválidos en campos (Tipo de Documento, Fecha, Género)
+### Respuesta esperada: HTTP 400 Bad Request con lista de errores por fila
+### ------------------------------------------------------------------------------
+POST {{baseUrl}}/candidatos/importar
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="valores_invalidos.csv"
+Content-Type: text/csv
+
+Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado
+CAND-010;RODRIGUEZ;ANA;40112233;CEDULA;1999-99-99;X;ARGENTINA;email-no-valido;UNIVERSITARIO;Quizas
+--WebAppBoundary--
