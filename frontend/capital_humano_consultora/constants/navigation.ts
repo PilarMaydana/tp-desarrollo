@@ -41,7 +41,8 @@ export const NAV_ITEMS: NavItem[] = [
   {
     type: 'link',
     label: 'Evaluaciones',
-    href: ROUTES.CONSULTOR.EVALUACIONES,
+    // TODO: apuntar al listado cuando exista la gestión de evaluaciones
+    href: ROUTES.CONSULTOR.EVALUACIONES_NUEVA,
     icon: 'clipboard_check',
     enabled: true,
     roles: ['CONSULTOR'],

@@ -8,7 +8,9 @@ export const ROUTES = {
     LOGIN: '/',
   },
   CONSULTOR: {
-    EVALUACIONES: '/en-desarrollo?modulo=Evaluación+de+Candidatos',
+    // TODO: apuntar al listado cuando exista la gestión de evaluaciones
+    EVALUACIONES: '/evaluaciones/nueva',
+    EVALUACIONES_NUEVA: '/evaluaciones/nueva',
     COMPETENCIAS: '/competencias',
     COMPETENCIAS_NUEVO: '/competencias/nueva',
     COMPETENCIAS_NUEVA: '/competencias/nueva',
