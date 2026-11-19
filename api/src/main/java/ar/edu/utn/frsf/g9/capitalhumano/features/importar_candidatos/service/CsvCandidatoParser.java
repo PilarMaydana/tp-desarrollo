@@ -1,6 +1,7 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.service;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.Genero;
+import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.Nacionalidad;
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.TipoDocumento;
 import ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.dto.ErrorImportacionDTO.DetalleErrorFilaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.dto.FilaCandidatoCsvDTO;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -307,9 +309,22 @@ public class CsvCandidatoParser {
         }
 
         // 8. Nacionalidad
+        String nacionalidadCanonica = null;
         if (nacionalidad.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Nacionalidad", "La nacionalidad es obligatoria y no puede estar vacía."));
             filaConError = true;
+        } else {
+            Optional<Nacionalidad> nacOpt = Nacionalidad.parse(nacionalidad);
+            if (nacOpt.isEmpty()) {
+                errores.add(new DetalleErrorFilaDTO(
+                        nroFila,
+                        "Nacionalidad",
+                        "Nacionalidad inválida: '" + nacionalidad + "'. Se admiten países o gentilicios de Latinoamérica (ej: Argentina, Argentino/a, Brasil, Chile, Uruguay, etc.)."
+                ));
+                filaConError = true;
+            } else {
+                nacionalidadCanonica = nacOpt.get().name();
+            }
         }
 
         // 9. Email
@@ -362,7 +377,7 @@ public class CsvCandidatoParser {
                     tipoDocumento,
                     fechaNacimiento,
                     genero,
-                    nacionalidad.trim().toUpperCase(Locale.ROOT),
+                    nacionalidadCanonica,
                     email.trim().toLowerCase(Locale.ROOT),
                     escolaridad.trim().toUpperCase(Locale.ROOT),
                     eliminado

@@ -460,7 +460,7 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
                     <span className="font-bold text-gray-800 font-mono">Nro candidato:</span> Clave única identificatoria.
                   </div>
                   <div>
-                    <span className="font-bold text-gray-800 font-mono">Apellido y Nombre:</span> Texto obligatorio.
+                    <span className="font-bold text-gray-800 font-mono">Apellido y Nombre:</span> Texto obligatorio en cada columna.
                   </div>
                   <div>
                     <span className="font-bold text-gray-800 font-mono">Tipo documento:</span> Permitidos: <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">DNI</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">LE</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">LC</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">PP</code>.
@@ -473,6 +473,9 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
                   </div>
                   <div>
                     <span className="font-bold text-gray-800 font-mono">Género:</span> <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">H</code> (Hombre) o <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">M</code> (Mujer).
+                  </div>
+                  <div>
+                    <span className="font-bold text-gray-800 font-mono">Nacionalidad:</span> Países o gentilicios de Latinoamérica (ej: <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Argentina</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Argentino/a</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">Brasil</code>, etc.).
                   </div>
                   <div>
                     <span className="font-bold text-gray-800 font-mono">Email:</span> Formato de correo electrónico válido.
