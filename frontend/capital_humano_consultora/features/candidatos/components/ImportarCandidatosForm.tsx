@@ -21,7 +21,7 @@ export interface ImportarCandidatosFormProps {
 }
 
 const ENCABEZADOS_REQUERIDOS =
-  'Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado';
+  'Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -456,8 +456,8 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
             {isFormatAccordionOpen && (
               <div className="mt-2.5 p-3.5 bg-white rounded-xl border border-gray-200 text-xs text-gray-600 space-y-2 animate-in fade-in duration-150">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                  <div>
-                    <span className="font-bold text-gray-800 font-mono">Nro candidato:</span> Clave única identificatoria.
+                  <div className="sm:col-span-2 p-2.5 rounded-lg bg-[#F4F0FF] border border-[#D0BCFF]/70 text-[#3F2581]">
+                    <span className="font-bold">Número de candidato automático:</span> No incluya la columna <code className="bg-white px-1.5 py-0.5 rounded font-mono font-semibold">Nro candidato</code> en el CSV. El sistema identifica a cada persona por <span className="font-semibold">Tipo documento + Nro documento</span>, asigna automáticamente un entero correlativo a los candidatos nuevos y conserva el número existente al actualizar.
                   </div>
                   <div>
                     <span className="font-bold text-gray-800 font-mono">Apellido y Nombre:</span> Texto obligatorio en cada columna.
@@ -466,7 +466,7 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
                     <span className="font-bold text-gray-800 font-mono">Tipo documento:</span> Permitidos: <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">DNI</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">LE</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">LC</code>, <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">PP</code>.
                   </div>
                   <div>
-                    <span className="font-bold text-gray-800 font-mono">Nro documento:</span> Dígitos identificatorios.
+                    <span className="font-bold text-gray-800 font-mono">Nro documento:</span> Clave única junto con Tipo documento (en <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1 py-0.5 rounded font-mono">DNI/LE/LC</code> solo dígitos; puntos y espacios se quitan automáticamente; en <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1 py-0.5 rounded font-mono">PP</code> alfanumérico sin espacios).
                   </div>
                   <div>
                     <span className="font-bold text-gray-800 font-mono">Fecha de nacimiento:</span> Formato ISO <code className="bg-[#EADDFF]/60 text-[#3F2581] px-1.5 py-0.5 rounded font-mono font-medium">AAAA-MM-DD</code> (ej. 1990-05-14).
