@@ -71,6 +71,32 @@ export function extraerErrorPanelDesdeApiError(
   };
 }
 
+export function formatNoCandidatosMensaje(filtros: {
+  apellido?: string;
+  nombre?: string;
+  nroCandidato?: string;
+}): string {
+  const ap = filtros.apellido?.trim();
+  const nom = filtros.nombre?.trim();
+  const nro = filtros.nroCandidato?.trim();
+
+  const campos: string[] = [];
+  if (ap) campos.push('apellido');
+  if (nom) campos.push('nombre');
+  if (nro) campos.push('número');
+
+  if (campos.length === 1) {
+    return `No existen candidatos con ese ${campos[0]}.`;
+  }
+  if (campos.length === 2) {
+    return `No existen candidatos con ese ${campos[0]} o ${campos[1]}.`;
+  }
+  if (campos.length === 3) {
+    return 'No existen candidatos con ese apellido, nombre o número.';
+  }
+  return 'No existen candidatos activos registrados.';
+}
+
 export function useEvaluacionWizard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<WizardStepIndex>(0);
@@ -89,6 +115,11 @@ export function useEvaluacionWizard() {
   const [hasSearched, setHasSearched] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchError, setSearchError] = useState<ErrorPanelState | null>(null);
+  const [lastSearchFilters, setLastSearchFilters] = useState<{
+    apellido?: string;
+    nombre?: string;
+    nroCandidato?: string;
+  }>({});
 
   const [selectedResultadoIds, setSelectedResultadoIds] = useState<number[]>([]);
   const [candidatosAEvaluar, setCandidatosAEvaluar] = useState<CandidatoResumenDTO[]>([]);
@@ -139,6 +170,7 @@ export function useEvaluacionWizard() {
     isExportingRef.current = false;
 
     searchForm.reset({ apellido: '', nombre: '', nroCandidato: '' });
+    setLastSearchFilters({});
     setCurrentStep(0);
     setResultadosBusqueda([]);
     setHasSearched(false);
@@ -194,6 +226,11 @@ export function useEvaluacionWizard() {
     setIsSearching(true);
     setSearchError(null);
     setSelectedResultadoIds([]);
+    setLastSearchFilters({
+      apellido: data.apellido,
+      nombre: data.nombre,
+      nroCandidato: data.nroCandidato,
+    });
 
     try {
       const resultados = await evaluacionService.buscarCandidatos({
@@ -216,6 +253,12 @@ export function useEvaluacionWizard() {
       setIsSearching(false);
     }
   });
+
+  const searchEmptyMessage = useMemo(() => {
+    if (!hasSearched || isSearching) return null;
+    if (resultadosBusqueda.length > 0 && !searchError) return null;
+    return formatNoCandidatosMensaje(lastSearchFilters);
+  }, [hasSearched, isSearching, resultadosBusqueda.length, searchError, lastSearchFilters]);
 
   const agregadosIdSet = useMemo(
     () => new Set(candidatosAEvaluar.map((c) => c.id)),
@@ -643,6 +686,7 @@ export function useEvaluacionWizard() {
     hasSearched,
     isSearching,
     searchError,
+    searchEmptyMessage,
     handleDismissSearchError,
     selectedResultadoIds,
     handleToggleResultado,

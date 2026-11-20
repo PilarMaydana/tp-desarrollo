@@ -45,6 +45,7 @@ export const EvaluarCandidatosWizard: React.FC = () => {
           isSearching={wizard.isSearching}
           hasSearched={wizard.hasSearched}
           searchError={wizard.searchError}
+          searchEmptyMessage={wizard.searchEmptyMessage}
           onDismissSearchError={wizard.handleDismissSearchError}
           resultadosBusqueda={wizard.resultadosBusqueda}
           selectedResultadoIds={wizard.selectedResultadoIds}

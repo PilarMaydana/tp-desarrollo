@@ -10,7 +10,7 @@ export interface CandidatosSelectionTableProps {
   candidatos: CandidatoResumenDTO[];
   selectedIds: number[];
   onToggleOne: (candidatoId: number) => void;
-  onToggleAll: (checked: boolean) => void;
+  onToggleAll?: (checked: boolean) => void;
   disabledIds?: Set<number>;
   disabledBadgeLabel?: string;
   blockedNros?: Set<string>;
@@ -18,6 +18,7 @@ export interface CandidatosSelectionTableProps {
   emptyTitle: string;
   emptyDescription?: string;
   emptyIcon?: string;
+  footerAction?: React.ReactNode;
 }
 
 export const CandidatosSelectionTable: React.FC<CandidatosSelectionTableProps> = ({
@@ -33,6 +34,7 @@ export const CandidatosSelectionTable: React.FC<CandidatosSelectionTableProps> =
   emptyTitle,
   emptyDescription,
   emptyIcon = 'search',
+  footerAction,
 }) => {
   if (isLoading) {
     return (
@@ -54,11 +56,7 @@ export const CandidatosSelectionTable: React.FC<CandidatosSelectionTableProps> =
     );
   }
 
-  const selectableCandidatos = candidatos.filter((c) => !disabledIds?.has(c.id));
   const selectedSet = new Set(selectedIds);
-  const allSelectableChecked =
-    selectableCandidatos.length > 0 &&
-    selectableCandidatos.every((c) => selectedSet.has(c.id));
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-[#D0BCFF] bg-white shadow-xs">
@@ -66,16 +64,7 @@ export const CandidatosSelectionTable: React.FC<CandidatosSelectionTableProps> =
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-[#EADDFF] text-[#3F2581] border-b border-[#D0BCFF]">
-              <th className="px-4 py-3.5 w-14">
-                <div className="inline-flex rounded-md focus-within:ring-2 focus-within:ring-[#3F2581] focus-within:ring-offset-1">
-                  <Checkbox
-                    id={`${idPrefix}-select-all`}
-                    checked={allSelectableChecked}
-                    disabled={selectableCandidatos.length === 0}
-                    onChange={onToggleAll}
-                  />
-                </div>
-              </th>
+              <th className="px-4 py-3.5 w-12" aria-label="Selección" />
               <th className="px-4 py-3.5 text-sm font-bold tracking-wider uppercase text-[#3F2581]">
                 Nro. candidato
               </th>
@@ -155,6 +144,21 @@ export const CandidatosSelectionTable: React.FC<CandidatosSelectionTableProps> =
           </tbody>
         </table>
       </div>
+
+      {footerAction && (
+        <div className="px-4 py-2 bg-[#FBF9FE] border-t border-[#D0BCFF] flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-[#757575] font-medium">
+            {selectedIds.length > 0 ? (
+              <span className="text-[#3F2581] font-semibold">
+                {selectedIds.length} candidato{selectedIds.length > 1 ? 's' : ''} seleccionado{selectedIds.length > 1 ? 's' : ''}
+              </span>
+            ) : (
+              <span>Seleccione candidatos mediante la casilla de verificación</span>
+            )}
+          </div>
+          <div>{footerAction}</div>
+        </div>
+      )}
     </div>
   );
 };
