@@ -47,7 +47,7 @@ function DashboardContent({ children, consultorNombre, className = '' }: Dashboa
   // Si está cargando o no autenticado, mostrar loader y no renderizar contenido protegido
   if (isLoading || !isAuthenticated || !user) {
     return (
-      <div className="min-h-screen bg-[#F6F6F6] flex items-center justify-center p-4">
+      <div className="h-screen w-full bg-[#F6F6F6] flex items-center justify-center p-4">
         <div className="w-8 h-8 border-3 border-[#3F2581] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -56,7 +56,7 @@ function DashboardContent({ children, consultorNombre, className = '' }: Dashboa
   // Prevenir parpadeo de contenido si el rol no coincide con la ruta mientras se ejecuta la redirección
   if (user.role === 'CANDIDATO' && !isCandidatoRoute) {
     return (
-      <div className="min-h-screen bg-[#F6F6F6] flex items-center justify-center p-4">
+      <div className="h-screen w-full bg-[#F6F6F6] flex items-center justify-center p-4">
         <div className="w-8 h-8 border-3 border-[#3F2581] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -64,17 +64,19 @@ function DashboardContent({ children, consultorNombre, className = '' }: Dashboa
 
   if (user.role === 'CONSULTOR' && isCandidatoRoute) {
     return (
-      <div className="min-h-screen bg-[#F6F6F6] flex items-center justify-center p-4">
+      <div className="h-screen w-full bg-[#F6F6F6] flex items-center justify-center p-4">
         <div className="w-8 h-8 border-3 border-[#3F2581] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-[#F6F6F6]">
+    <div className="h-screen w-full flex flex-col bg-[#F6F6F6] overflow-hidden">
       {!isCandidato && <Sidebar />}
       <Topbar consultorNombre={consultorNombre} />
-      <main className={`flex-1 w-full px-4 sm:px-8 lg:px-12 py-6 sm:py-8 ${className}`}>
+      <main
+        className={`flex-1 min-h-0 w-full overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-8 ${className}`}
+      >
         {children}
       </main>
     </div>
