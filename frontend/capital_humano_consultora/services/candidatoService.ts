@@ -80,7 +80,7 @@ export async function importarCandidatos(
   formData.append('file', file);
 
   const resolvedToken =
-    token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') || '' : '');
+    token || (typeof window !== 'undefined' ? (sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token') || '') : '');
 
   const headers: Record<string, string> = {};
   if (resolvedToken) {

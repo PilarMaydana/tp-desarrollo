@@ -84,7 +84,7 @@ export const authService = {
 
   getCurrentUser(): User | null {
     if (typeof window === 'undefined') return null;
-    const userStr = localStorage.getItem('auth_user');
+    const userStr = sessionStorage.getItem('auth_user') || localStorage.getItem('auth_user');
     if (!userStr) return null;
     try {
       return JSON.parse(userStr) as User;
@@ -95,6 +95,9 @@ export const authService = {
 
   logout(): void {
     if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_user');
+      sessionStorage.removeItem('cuestionario_id');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
       localStorage.removeItem('cuestionario_id');
@@ -103,13 +106,17 @@ export const authService = {
 
   saveSession(authResponse: AuthResponse): void {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', authResponse.token);
-      localStorage.setItem('auth_user', JSON.stringify(authResponse.user));
+      sessionStorage.setItem('auth_token', authResponse.token);
+      sessionStorage.setItem('auth_user', JSON.stringify(authResponse.user));
       if (authResponse.user.cuestionarioId) {
-        localStorage.setItem('cuestionario_id', String(authResponse.user.cuestionarioId));
+        sessionStorage.setItem('cuestionario_id', String(authResponse.user.cuestionarioId));
       } else {
-        localStorage.removeItem('cuestionario_id');
+        sessionStorage.removeItem('cuestionario_id');
       }
+      // Limpiar residuo previo de localStorage para evitar que persista entre ventanas cerradas
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('cuestionario_id');
     }
   },
 };

@@ -31,7 +31,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}
   // Obtenemos token de autenticación del storage si estamos en el cliente
   let token: string | null = null;
   if (typeof window !== 'undefined') {
-    token = localStorage.getItem('auth_token');
+    token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
   }
 
   const defaultHeaders: Record<string, string> = {

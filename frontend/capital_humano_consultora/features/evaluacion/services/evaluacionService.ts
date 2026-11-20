@@ -177,7 +177,7 @@ export const evaluacionService = {
     const headers: Record<string, string> = {};
 
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
+      const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
