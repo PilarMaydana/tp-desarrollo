@@ -1,6 +1,7 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.Pregunta;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
@@ -39,6 +41,9 @@ public class PreguntaAsignada {
 
     @Column(name = "nro_orden", nullable = false)
     private Integer nroOrden;
+
+    @OneToOne(mappedBy = "preguntaAsignada", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private RespuestaCandidato respuestaCandidato;
 
     public PreguntaAsignada() {
     }
@@ -78,5 +83,16 @@ public class PreguntaAsignada {
 
     public void setNroOrden(Integer nroOrden) {
         this.nroOrden = nroOrden;
+    }
+
+    public RespuestaCandidato getRespuestaCandidato() {
+        return respuestaCandidato;
+    }
+
+    public void setRespuestaCandidato(RespuestaCandidato respuestaCandidato) {
+        this.respuestaCandidato = respuestaCandidato;
+        if (respuestaCandidato != null && respuestaCandidato.getPreguntaAsignada() != this) {
+            respuestaCandidato.setPreguntaAsignada(this);
+        }
     }
 }

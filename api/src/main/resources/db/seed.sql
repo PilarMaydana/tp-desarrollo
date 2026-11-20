@@ -13,7 +13,9 @@ INSERT INTO factor (codigo, nombre, descripcion, nro_orden, competencia_id, elim
     ('FAC-03', 'DESARROLLO DE SOFTWARE', 'CAPACIDAD PARA DISEÑAR Y PROGRAMAR SOLUCIONES DE SOFTWARE.', 1, 5, FALSE),
     ('FAC-04', 'COLABORACIÓN EN EQUIPO', 'CAPACIDAD PARA COOPERAR Y COORDINAR TAREAS CON OTROS INTEGRANTES.', 1, 3, FALSE),
     ('FAC-05', 'ANÁLISIS DE CAUSA RAÍZ', 'CAPACIDAD PARA DIAGNOSTICAR EL ORIGEN DE PROBLEMAS COMPLEJOS.', 1, 4, FALSE),
-    ('FAC-06', 'GESTIÓN DE EQUIPOS', 'CAPACIDAD PARA COORDINAR Y MOTIVAR PERSONAS HACIA METAS COMUNES.', 1, 2, FALSE);
+    ('FAC-06', 'GESTIÓN DE EQUIPOS', 'CAPACIDAD PARA COORDINAR Y MOTIVAR PERSONAS HACIA METAS COMUNES.', 1, 2, FALSE),
+    ('FAC-07', 'ARQUITECTURA EN LA NUBE', 'CAPACIDAD PARA DISEÑAR SISTEMAS DISTRIBUIDOS Y ESCALABLES.', 2, 5, FALSE),
+    ('FAC-08', 'VISIÓN ESTRATÉGICA', 'CAPACIDAD PARA ALINEAR DECISIONES TÉCNICAS CON OBJETIVOS DE NEGOCIO (1 SOLA PREGUNTA PARA PROBAR EXCLUSIÓN EN CU 026).', 2, 2, FALSE);
 
 INSERT INTO puesto (codigo, nombre, descripcion, empresa, eliminado) VALUES
     ('DEV-01', 'DESARROLLADOR SENIOR', 'DESARROLLO Y ARQUITECTURA DE SOFTWARE.', 'TECH SOLUTIONS', FALSE),
@@ -41,7 +43,10 @@ INSERT INTO pregunta (nombre, enunciado, descripcion, factor_id, eliminado) VALU
     ('DISTRIBUCIÓN DE TAREAS', '¿COORDINA CON SUS PARES PARA EQUILIBRAR LA CARGA DE TRABAJO?', 'EVALÚA COORDINACIÓN GRUPAL', 4, FALSE),
     ('DIAGNÓSTICO DE INCIDENTES', '¿IDENTIFICA LA CAUSA RAÍZ ANTES DE APLICAR UN PARCHE TEMPORAL?', 'ÚNICA PREGUNTA DEL FACTOR PARA PROBAR FLUJO 9.A', 5, FALSE),
     ('DELEGACIÓN EFECTIVA', '¿DELEGA RESPONSABILIDADES CON OBJETIVOS Y PLAZOS CLAROS?', 'EVALÚA CAPACIDAD DE DELEGACIÓN', 6, FALSE),
-    ('MOTIVACIÓN DE EQUIPO', '¿RECONOCE LOGROS Y FOMENTA EL DESARROLLO PROFESIONAL DEL EQUIPO?', 'EVALÚA LIDERAZGO POSITIVO', 6, FALSE);
+    ('MOTIVACIÓN DE EQUIPO', '¿RECONOCE LOGROS Y FOMENTA EL DESARROLLO PROFESIONAL DEL EQUIPO?', 'EVALÚA LIDERAZGO POSITIVO', 6, FALSE),
+    ('ARQUITECTURA MICROSERVICIOS', '¿CUÁNDO CONVIENE SEPARAR UN SISTEMA EN MICROSERVICIOS INDEPENDIENTES?', 'EVALÚA CRITERIO DE ARQUITECTURA DISTRIBUIDA', 7, FALSE),
+    ('TOLERANCIA A FALLOS', '¿CÓMO DISEÑA UN SERVICIO PARA CONTINUAR OPERANDO ANTE FALLOS PARCIALES?', 'EVALÚA RESILIENCIA EN SISTEMAS EN LA NUBE', 7, FALSE),
+    ('PLANIFICACIÓN TECNOLÓGICA', '¿ALINEA EL ROADMAP TÉCNICO CON LAS PRIORIDADES ESTRATÉGICAS DEL NEGOCIO?', 'ÚNICA PREGUNTA DEL FACTOR 8 PARA PROBAR EXCLUSIÓN EN CU 026', 8, FALSE);
 
 INSERT INTO pregunta_opcion_respuesta (pregunta_id, nombre, descripcion, nro_orden, ponderacion) VALUES
     (1, 'OPCION A', 'UN PARADIGMA BASADO EN OBJETOS', 1, 10.0),
@@ -71,7 +76,15 @@ INSERT INTO pregunta_opcion_respuesta (pregunta_id, nombre, descripcion, nro_ord
     (12, 'NUNCA', 'NUNCA', 1, 0.0),
     (12, 'SIEMPRE', 'SIEMPRE', 2, 10.0),
     (13, 'NUNCA', 'NUNCA', 1, 0.0),
-    (13, 'SIEMPRE', 'SIEMPRE', 2, 10.0);
+    (13, 'SIEMPRE', 'SIEMPRE', 2, 10.0),
+    (14, 'SIEMPRE DESDE EL INICIO', 'SEPARAR TODO EN MICROSERVICIOS DESDE EL PRIMER DÍA', 1, 0.0),
+    (14, 'SEGÚN DOMINIO Y ESCALA', 'CUANDO LOS LÍMITES DE DOMINIO Y ESCALABILIDAD LO JUSTIFICAN', 2, 6.0),
+    (14, 'EVALUANDO COSTO-BENEFICIO', 'CON ANÁLISIS DE COMPLEJIDAD OPERATIVA Y EQUIPOS', 3, 4.0),
+    (15, 'SIN CONTROLES', 'ESPERAR QUE EL SERVICIO SE RECUPERE MANUALMENTE', 1, 1.0),
+    (15, 'REINTENTOS BÁSICOS', 'APLICAR REINTENTOS SIMPLES SIN LÍMITES', 2, 3.0),
+    (15, 'CIRCUIT BREAKER Y FALLBACK', 'APLICAR TIMEOUTS, CIRCUIT BREAKER Y DEGRADACIÓN CONTROLADA', 3, 6.0),
+    (16, 'NUNCA', 'NUNCA', 1, 0.0),
+    (16, 'SIEMPRE', 'SIEMPRE', 2, 10.0);
 
 INSERT INTO opcion_respuesta (nombre, descripcion) VALUES
     ('FRECUENCIA', 'ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO'),
@@ -104,12 +117,65 @@ INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, n
     ('7', 'DNI', '28999111', 'SÁNCHEZ', 'DIEGO', 'diego.sanchez@example.com', FALSE);
 
 INSERT INTO evaluacion (puesto_id, fecha_creacion, consultor_id, tiempo_maximo_minutos, cantidad_preguntas_por_bloque) VALUES
-    (1, CURRENT_TIMESTAMP, 1, 60, 5);
+    (1, CURRENT_TIMESTAMP, 1, 60, 5),
+    (3, DATEADD('HOUR', -2, CURRENT_TIMESTAMP), 1, 60, 3);
 
 INSERT INTO cuestionario (candidato_id, puesto_id, evaluacion_id, estado, clave_acceso, fecha_creacion, fecha_cambio_estado, cantidad_accesos, tiempo_maximo_minutos, cantidad_preguntas_por_bloque, tiempo_restante_segundos, eliminado) VALUES
     (1, 1, 1, 'ACTIVO', 'CLAVE123', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 60, 5, 3600, FALSE),
+    -- Caso (g) CU 026: Cuestionario perteneciente a OTRO candidato (candidato 2 -> 404 por pertenencia para candidato 1)
     (2, 1, 1, 'EN_PROCESO', 'TEST4567', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 60, 5, 2400, FALSE),
     (3, 1, 1, 'COMPLETO', 'COMP1234', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 60, 5, 0, FALSE),
     (6, 1, 1, 'INCOMPLETO', 'INCO1234', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 2, 60, 5, 0, FALSE),
     (7, 1, 1, 'SIN_CONTESTAR', 'SINC1234', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 60, 5, 3600, FALSE);
+
+-- ============================================================================
+-- Cuestionarios de prueba para CU 026 (los cuestionarios reales los crea CU 025)
+-- Todos pertenecen al candidato 1 (JUAN PÉREZ) sobre el puesto 3 (ARQUITECTO DE SOFTWARE):
+--   Competencias: TEC-01 (FAC-03 con 3 preg, FAC-07 con 2 preg) y LID-01 (FAC-06 con 2 preg, FAC-08 con 1 preg -> excluido)
+--   ID 6  -> (a) ACTIVO vigente con bloques ya generados por CU 025 (2 bloques de 3 preguntas, excluye FAC-08)
+--   ID 7  -> (b) EN_PROCESO vigente con bloque 1 respondido (y respuestas guardadas) y bloque 2 pendiente (reingreso 1.C)
+--   ID 8  -> (c) ACTIVO vencido (fecha_creacion > 72h atrás -> flujo 1.B)
+--   ID 9  -> (d) EN_PROCESO vencido (fecha_inicio > 60 min atrás -> flujo 1.A)
+--   ID 10 -> (e) ACTIVO con cantidad_accesos = maxAccesos (3 -> límite de accesos)
+--   ID 11 -> (f) COMPLETO (estado final no disponible)
+--   ID 2  -> (g) Cuestionario de candidato 2 (ajeno -> 404)
+-- ============================================================================
+INSERT INTO cuestionario (candidato_id, puesto_id, evaluacion_id, estado, clave_acceso, fecha_creacion, fecha_cambio_estado, fecha_inicio, fecha_finalizacion, cantidad_accesos, tiempo_maximo_minutos, cantidad_preguntas_por_bloque, tiempo_restante_segundos, ultimo_bloque_respondido, eliminado) VALUES
+    (1, 3, 2, 'ACTIVO', 'CU26ACT1', DATEADD('HOUR', -2, CURRENT_TIMESTAMP), DATEADD('HOUR', -2, CURRENT_TIMESTAMP), NULL, NULL, 0, 60, 3, 3600, NULL, FALSE),
+    (1, 3, 2, 'EN_PROCESO', 'CU26PRO1', DATEADD('HOUR', -3, CURRENT_TIMESTAMP), DATEADD('MINUTE', -15, CURRENT_TIMESTAMP), DATEADD('MINUTE', -15, CURRENT_TIMESTAMP), NULL, 1, 60, 3, 2700, 1, FALSE),
+    (1, 3, 2, 'ACTIVO', 'CU26VEN1', DATEADD('HOUR', -80, CURRENT_TIMESTAMP), DATEADD('HOUR', -80, CURRENT_TIMESTAMP), NULL, NULL, 0, 60, 3, 3600, NULL, FALSE),
+    (1, 3, 2, 'EN_PROCESO', 'CU26VPR1', DATEADD('HOUR', -5, CURRENT_TIMESTAMP), DATEADD('MINUTE', -90, CURRENT_TIMESTAMP), DATEADD('MINUTE', -90, CURRENT_TIMESTAMP), NULL, 1, 60, 3, 0, NULL, FALSE),
+    (1, 3, 2, 'ACTIVO', 'CU26ACC1', DATEADD('HOUR', -1, CURRENT_TIMESTAMP), DATEADD('HOUR', -1, CURRENT_TIMESTAMP), NULL, NULL, 3, 60, 3, 3600, NULL, FALSE),
+    (1, 3, 2, 'COMPLETO', 'CU26CMP1', DATEADD('HOUR', -10, CURRENT_TIMESTAMP), DATEADD('HOUR', -8, CURRENT_TIMESTAMP), DATEADD('HOUR', -9, CURRENT_TIMESTAMP), DATEADD('HOUR', -8, CURRENT_TIMESTAMP), 1, 60, 3, 0, 2, FALSE);
+
+-- Bloques pregenerados (como los crea CU 025) para los cuestionarios de prueba ID 6 (ACTIVO) e ID 7 (EN_PROCESO)
+INSERT INTO bloque_cuestionario (cuestionario_id, nro_bloque, respondido, fecha_respuesta) VALUES
+    (6, 1, FALSE, NULL),
+    (6, 2, FALSE, NULL),
+    (7, 1, TRUE, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP)),
+    (7, 2, FALSE, NULL);
+
+-- Preguntas asignadas (2 por factor válido: FAC-03 -> preg 1,2; FAC-07 -> preg 14,15; FAC-06 -> preg 12,13; excluye FAC-08 -> preg 16)
+INSERT INTO pregunta_asignada (bloque_cuestionario_id, pregunta_id, nro_orden) VALUES
+    -- Cuestionario ID 6 (ACTIVO vigente), bloque 1 (ID 1) y bloque 2 (ID 2)
+    (1, 1, 1),
+    (1, 14, 2),
+    (1, 12, 3),
+    (2, 2, 4),
+    (2, 15, 5),
+    (2, 13, 6),
+    -- Cuestionario ID 7 (EN_PROCESO vigente), bloque 1 respondido (ID 3) y bloque 2 pendiente (ID 4)
+    (3, 1, 1),
+    (3, 12, 2),
+    (3, 14, 3),
+    (4, 2, 4),
+    (4, 13, 5),
+    (4, 15, 6);
+
+-- Respuestas ya guardadas para el bloque 1 del cuestionario ID 7 (preguntas asignadas IDs 7, 8, 9)
+INSERT INTO respuesta_candidato (pregunta_asignada_id, opcion_respuesta_id, fecha_respuesta) VALUES
+    (7, 1, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP)),
+    (8, 26, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP)),
+    (9, 30, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP));
+
 
