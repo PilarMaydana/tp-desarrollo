@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * DAO para el acceso a datos de la entidad {@link Cuestionario}.
@@ -31,5 +32,25 @@ public interface CuestionarioDAO extends JpaRepository<Cuestionario, Long> {
     List<Cuestionario> findActivosByCandidatoIdInAndEstadoIn(
             @Param("candidatoIds") Collection<Long> candidatoIds,
             @Param("estados") Collection<EstadoCuestionario> estados
+    );
+
+    /**
+     * Busca un cuestionario no eliminado por su ID verificando que pertenezca al candidato indicado,
+     * cargando su puesto y evaluación asociados.
+     *
+     * @param id          identificador del cuestionario
+     * @param candidatoId identificador del candidato dueño del cuestionario
+     * @return cuestionario encontrado o vacío si no existe o pertenece a otro candidato
+     */
+    @Query("SELECT c FROM Cuestionario c " +
+           "LEFT JOIN FETCH c.puesto p " +
+           "LEFT JOIN FETCH c.evaluacion e " +
+           "LEFT JOIN FETCH e.puesto ep " +
+           "WHERE c.id = :id " +
+           "AND c.candidato.id = :candidatoId " +
+           "AND c.eliminado = false")
+    Optional<Cuestionario> findByIdAndCandidatoIdConPuesto(
+            @Param("id") Long id,
+            @Param("candidatoId") Long candidatoId
     );
 }
