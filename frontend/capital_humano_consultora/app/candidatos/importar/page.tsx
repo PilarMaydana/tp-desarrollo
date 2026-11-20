@@ -9,7 +9,7 @@ export default function CandidatosImportarPage() {
   return (
     <DashboardLayout>
       <ImportarCandidatosForm
-        onSuccessRedirect={ROUTES.HOME}
+        onSuccessRedirect={ROUTES.CONSULTOR.CANDIDATOS_IMPORTAR}
         onCancelRedirect={ROUTES.HOME}
       />
     </DashboardLayout>

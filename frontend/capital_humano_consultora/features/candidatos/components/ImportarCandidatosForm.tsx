@@ -168,7 +168,16 @@ export const ImportarCandidatosForm: React.FC<ImportarCandidatosFormProps> = ({
 
   const handleModalAceptar = () => {
     setIsSuccessModalOpen(false);
-    router.push(onSuccessRedirect);
+    // Limpiar el archivo procesado para permitir una nueva importación limpia
+    setSelectedFile(null);
+    setErrorResponse(null);
+    setIsErrorDetailsOpen(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    if (onSuccessRedirect && onSuccessRedirect !== ROUTES.CONSULTOR.CANDIDATOS_IMPORTAR) {
+      router.push(onSuccessRedirect);
+    }
   };
 
   const handleCopiarEncabezados = async () => {
