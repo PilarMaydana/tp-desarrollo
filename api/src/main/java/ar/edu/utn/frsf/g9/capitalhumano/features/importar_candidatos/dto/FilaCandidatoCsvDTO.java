@@ -7,10 +7,13 @@ import java.time.LocalDate;
 
 /**
  * Representación tipada de los datos validados de una fila del archivo CSV de candidatos.
+ *
+ * <p>El identificador de negocio para deduplicar/actualizar en la importación es el par
+ * {@code (tipoDocumento, nroDocumento)}. El número de candidato ({@code nro_candidato})
+ * es gestionado automáticamente por el sistema.</p>
  */
 public record FilaCandidatoCsvDTO(
         int nroFila,
-        String nroCandidato,
         String apellido,
         String nombre,
         String nroDocumento,

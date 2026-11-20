@@ -1,4 +1,4 @@
-Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado
-CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False
-CAND-002;GOMEZ;MARIA;38987654;DNI;1995-11-22;M;ARGENTINA;maria.gomez@mail.com;TERCIARIO;False
-CAND-003;LOPEZ;CARLOS;29456789;LE;1982-03-08;H;ARGENTINA;carlos.lopez@mail.com;UNIVERSITARIO;True
+Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado
+PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False
+GOMEZ;MARIA;38987654;DNI;1995-11-22;M;ARGENTINA;maria.gomez@mail.com;TERCIARIO;False
+LOPEZ;CARLOS;29456789;LE;1982-03-08;H;ARGENTINA;carlos.lopez@mail.com;UNIVERSITARIO;True

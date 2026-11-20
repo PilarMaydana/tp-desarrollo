@@ -20,17 +20,20 @@ class CsvCandidatoParserTest {
 
     private CsvCandidatoParser parser;
 
+    private static final String HEADER_VALIDO =
+            "Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado\n";
+
     @BeforeEach
     void setUp() {
         parser = new CsvCandidatoParser();
     }
 
     @Test
-    @DisplayName("Debe parsear correctamente un archivo CSV válido con BOM y delimitador ';'")
+    @DisplayName("Debe parsear correctamente un archivo CSV válido con BOM, delimitador ';' y normalización de documentos")
     void parsear_csvValido_exito() {
-        String csvContent = "\uFEFFNro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado\n"
-                + "CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False\n"
-                + "CAND-002;GOMEZ;MARIA;38987654;DNI;1995-11-22;M;ARGENTINA;maria.gomez@mail.com;TERCIARIO;True\n";
+        String csvContent = "\uFEFF" + HEADER_VALIDO
+                + "PEREZ;JUAN;35.123.456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False\n"
+                + "GOMEZ;MARIA;ab 123456;PP;1995-11-22;M;ARGENTINA;maria.gomez@mail.com;TERCIARIO;True\n";
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -45,7 +48,6 @@ class CsvCandidatoParserTest {
 
         FilaCandidatoCsvDTO fila1 = resultado.get(0);
         assertThat(fila1.nroFila()).isEqualTo(2);
-        assertThat(fila1.nroCandidato()).isEqualTo("CAND-001");
         assertThat(fila1.apellido()).isEqualTo("PEREZ");
         assertThat(fila1.nombre()).isEqualTo("JUAN");
         assertThat(fila1.nroDocumento()).isEqualTo("35123456");
@@ -59,8 +61,32 @@ class CsvCandidatoParserTest {
 
         FilaCandidatoCsvDTO fila2 = resultado.get(1);
         assertThat(fila2.nroFila()).isEqualTo(3);
-        assertThat(fila2.nroCandidato()).isEqualTo("CAND-002");
+        assertThat(fila2.tipoDocumento()).isEqualTo(TipoDocumento.PP);
+        assertThat(fila2.nroDocumento()).isEqualTo("AB123456");
         assertThat(fila2.eliminado()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Debe rechazar con error 400 si el archivo incluye la columna 'Nro candidato'")
+    void parsear_conColumnaNroCandidato_lanzaExcepcion() {
+        String csvContent = "Nro candidato;" + HEADER_VALIDO
+                + "1;PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False\n";
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "con_nro.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
+        );
+
+        assertThatThrownBy(() -> parser.parsear(file))
+                .isInstanceOf(CsvImportacionException.class)
+                .hasMessageContaining("El encabezado del archivo CSV es inválido.")
+                .satisfies(ex -> {
+                    CsvImportacionException cie = (CsvImportacionException) ex;
+                    assertThat(cie.getErrores()).anyMatch(e ->
+                            "Nro candidato".equals(e.campo())
+                                    && e.fila() == 1
+                                    && e.mensaje().contains("asignado automáticamente por el sistema")
+                    );
+                });
     }
 
     @Test
@@ -90,8 +116,8 @@ class CsvCandidatoParserTest {
     @Test
     @DisplayName("Debe lanzar excepción si se utilizan comas en lugar de punto y coma")
     void parsear_separadorComa_lanzaExcepcion() {
-        String csvContent = "Nro candidato,Apellido,Nombre,Nro documento,Tipo documento,Fecha de nacimiento,Género,Nacionalidad,Email,Escolaridad,Eliminado\n"
-                + "CAND-001,PEREZ,JUAN,35123456,DNI,1990-05-14,H,ARGENTINA,juan.perez@mail.com,UNIVERSITARIO,False\n";
+        String csvContent = "Apellido,Nombre,Nro documento,Tipo documento,Fecha de nacimiento,Género,Nacionalidad,Email,Escolaridad,Eliminado\n"
+                + "PEREZ,JUAN,35123456,DNI,1990-05-14,H,ARGENTINA,juan.perez@mail.com,UNIVERSITARIO,False\n";
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "comas.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
@@ -105,8 +131,8 @@ class CsvCandidatoParserTest {
     @Test
     @DisplayName("Debe lanzar excepción si faltan columnas requeridas en el encabezado")
     void parsear_encabezadoIncompleto_lanzaExcepcion() {
-        String csvContent = "Nro candidato;Apellido;Nombre;Nro documento\n"
-                + "CAND-001;PEREZ;JUAN;35123456\n";
+        String csvContent = "Apellido;Nombre;Nro documento\n"
+                + "PEREZ;JUAN;35123456\n";
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "incompleto.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
@@ -120,8 +146,8 @@ class CsvCandidatoParserTest {
     @Test
     @DisplayName("Debe reportar múltiples errores de fila (fecha inválida, enum fuera de rango, email inválido)")
     void parsear_filasInvalidas_reportaErrores() {
-        String csvContent = "Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado\n"
-                + "CAND-001;PEREZ;JUAN;35123456;PASAPORTE_INVALIDO;1990-02-31;X;ARGENTINA;emailInvalido;UNIVERSITARIO;TalVez\n";
+        String csvContent = HEADER_VALIDO
+                + "PEREZ;JUAN;35123456;PASAPORTE_INVALIDO;1990-02-31;X;ARGENTINA;emailInvalido;UNIVERSITARIO;TalVez\n";
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "errores.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
@@ -141,11 +167,11 @@ class CsvCandidatoParserTest {
     }
 
     @Test
-    @DisplayName("Debe rechazar el archivo si el mismo Nro candidato se repite dentro del CSV")
-    void parsear_duplicadosIntraArchivo_lanzaExcepcion() {
-        String csvContent = "Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado\n"
-                + "CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False\n"
-                + "CAND-001;PEREZ;JUAN CARLOS;35123456;DNI;1990-05-14;H;ARGENTINA;otro@mail.com;UNIVERSITARIO;False\n";
+    @DisplayName("Debe rechazar el archivo si el mismo par (Tipo documento, Nro documento) se repite incluso con distinta puntuación")
+    void parsear_documentosDuplicadosIntraArchivo_lanzaExcepcion() {
+        String csvContent = HEADER_VALIDO
+                + "PEREZ;JUAN;35.123.456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False\n"
+                + "PEREZ;JUAN CARLOS;35123456;DNI;1990-05-14;H;ARGENTINA;otro@mail.com;UNIVERSITARIO;False\n";
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "duplicados.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
@@ -156,7 +182,7 @@ class CsvCandidatoParserTest {
                 .satisfies(ex -> {
                     CsvImportacionException cie = (CsvImportacionException) ex;
                     assertThat(cie.getErrores()).anyMatch(e ->
-                            "Nro candidato".equals(e.campo())
+                            "Nro documento".equals(e.campo())
                                     && e.mensaje().contains("duplicado dentro del archivo")
                                     && e.fila() == 3
                     );
@@ -164,13 +190,50 @@ class CsvCandidatoParserTest {
     }
 
     @Test
+    @DisplayName("Debe permitir el mismo número de documento si el Tipo documento es distinto")
+    void parsear_mismoNumeroDistintoTipoDocumento_exito() {
+        String csvContent = HEADER_VALIDO
+                + "PEREZ;JUAN;35123456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False\n"
+                + "GOMEZ;ANA;35123456;PP;1992-08-10;M;ARGENTINA;ana.gomez@mail.com;TERCIARIO;False\n";
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "distinto_tipo.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
+        );
+
+        List<FilaCandidatoCsvDTO> resultado = parser.parsear(file);
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado.get(0).tipoDocumento()).isEqualTo(TipoDocumento.DNI);
+        assertThat(resultado.get(1).tipoDocumento()).isEqualTo(TipoDocumento.PP);
+    }
+
+    @Test
+    @DisplayName("Debe rechazar letras en Nro documento para tipos DNI, LE y LC")
+    void parsear_dniConLetras_lanzaExcepcion() {
+        String csvContent = HEADER_VALIDO
+                + "PEREZ;JUAN;35A23456;DNI;1990-05-14;H;ARGENTINA;juan.perez@mail.com;UNIVERSITARIO;False\n";
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "dni_letras.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
+        );
+
+        assertThatThrownBy(() -> parser.parsear(file))
+                .isInstanceOf(CsvImportacionException.class)
+                .satisfies(ex -> {
+                    CsvImportacionException cie = (CsvImportacionException) ex;
+                    assertThat(cie.getErrores()).anyMatch(e ->
+                            "Nro documento".equals(e.campo()) && e.mensaje().contains("solo dígitos")
+                    );
+                });
+    }
+
+    @Test
     @DisplayName("Debe parsear nacionalidades latinoamericanas (países y gentilicios masc/fem) y variantes de escolaridad")
     void parsear_nacionalidadesYEscolaridad_variantesValidas() {
-        String csvContent = "Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado\n"
-                + "CAND-001;PEREZ;JUAN;35123456;DNI;1990-05-14;H;argentino;juan.perez@mail.com;universitario incompleto;False\n"
-                + "CAND-002;SILVA;ANA;38987654;DNI;1995-11-22;M;brasileña;ana.silva@mail.com;Secundario Completo;False\n"
-                + "CAND-003;ROJAS;LUIS;29456789;LE;1982-03-08;H;chileno;luis.rojas@mail.com;primario;False\n"
-                + "CAND-004;GARCIA;MARIA;31112233;DNI;1988-07-19;M;MÉXICO;maria.garcia@mail.com;TERCIARIO INCOMPLETO;False\n";
+        String csvContent = HEADER_VALIDO
+                + "PEREZ;JUAN;35123456;DNI;1990-05-14;H;argentino;juan.perez@mail.com;universitario incompleto;False\n"
+                + "SILVA;ANA;38987654;DNI;1995-11-22;M;brasileña;ana.silva@mail.com;Secundario Completo;False\n"
+                + "ROJAS;LUIS;29456789;LE;1982-03-08;H;chileno;luis.rojas@mail.com;primario;False\n"
+                + "GARCIA;MARIA;31112233;DNI;1988-07-19;M;MÉXICO;maria.garcia@mail.com;TERCIARIO INCOMPLETO;False\n";
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "candidatos_latam.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)
@@ -195,8 +258,8 @@ class CsvCandidatoParserTest {
     @Test
     @DisplayName("Debe rechazar nacionalidades no latinoamericanas o escolaridades no permitidas")
     void parsear_nacionalidadYEscolaridad_invalidas_reportaErrores() {
-        String csvContent = "Nro candidato;Apellido;Nombre;Nro documento;Tipo documento;Fecha de nacimiento;Género;Nacionalidad;Email;Escolaridad;Eliminado\n"
-                + "CAND-001;MULLER;HANS;35123456;DNI;1990-05-14;H;ALEMANIA;hans@mail.com;DOCTORADO_FANTASMA;False\n";
+        String csvContent = HEADER_VALIDO
+                + "MULLER;HANS;35123456;DNI;1990-05-14;H;ALEMANIA;hans@mail.com;DOCTORADO_FANTASMA;False\n";
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "invalidos.csv", "text/csv", csvContent.getBytes(StandardCharsets.UTF_8)

@@ -29,13 +29,18 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * Componente encargado del parseo y validación exhaustiva del archivo CSV de candidatos.
+ * Componente encargado del parseo y validación exhaustiva del archivo CSV de candidatos (CU006).
+ *
+ * <p>El archivo CSV no debe incluir la columna {@code Nro candidato}, ya que el número de candidato
+ * es asignado y mantenido automáticamente por el sistema. La unicidad dentro del archivo se controla
+ * mediante la clave compuesta {@code (Tipo documento, Nro documento)} normalizada.</p>
  */
 @Component
 public class CsvCandidatoParser {
 
     private static final String SEPARADOR = ";";
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern SOLO_DIGITOS_PATTERN = Pattern.compile("^\\d+$");
     private static final DateTimeFormatter FECHA_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -52,7 +57,6 @@ public class CsvCandidatoParser {
     private static final String COL_ELIMINADO = "ELIMINADO";
 
     private static final List<String> COLUMNAS_REQUERIDAS = List.of(
-            COL_NRO_CANDIDATO,
             COL_APELLIDO,
             COL_NOMBRE,
             COL_NRO_DOCUMENTO,
@@ -64,6 +68,33 @@ public class CsvCandidatoParser {
             COL_ESCOLARIDAD,
             COL_ELIMINADO
     );
+
+    /**
+     * Normaliza un número de documento según su tipo:
+     * <ul>
+     *   <li>Para {@code DNI}, {@code LE} y {@code LC}: elimina puntos y espacios y pasa a mayúsculas.</li>
+     *   <li>Para {@code PP}: elimina espacios y pasa a mayúsculas.</li>
+     * </ul>
+     *
+     * @param tipoDocumento tipo de documento (puede ser {@code null} si aún no fue validado)
+     * @param nroDocumento  valor crudo recibido
+     * @return número de documento normalizado
+     */
+    public static String normalizarNroDocumento(TipoDocumento tipoDocumento, String nroDocumento) {
+        if (nroDocumento == null) {
+            return "";
+        }
+        String upper = nroDocumento.trim().toUpperCase(Locale.ROOT);
+        if (tipoDocumento == TipoDocumento.PP) {
+            return upper.replaceAll("\\s+", "");
+        }
+        if (tipoDocumento == TipoDocumento.DNI
+                || tipoDocumento == TipoDocumento.LE
+                || tipoDocumento == TipoDocumento.LC) {
+            return upper.replaceAll("[.\\s]+", "");
+        }
+        return upper;
+    }
 
     /**
      * Parsea y valida completamente un archivo CSV en memoria.
@@ -135,7 +166,7 @@ public class CsvCandidatoParser {
                 throw new CsvImportacionException("El encabezado del archivo CSV es inválido.", errores);
             }
 
-            Map<String, Integer> nrosCandidatoVistos = new HashMap<>();
+            Map<String, Integer> documentosVistos = new HashMap<>();
             int nroFila = 2;
             String linea;
 
@@ -145,7 +176,7 @@ public class CsvCandidatoParser {
                     continue;
                 }
 
-                procesarFila(linea, nroFila, indiceColumnas, nrosCandidatoVistos, errores, filasValidas);
+                procesarFila(linea, nroFila, indiceColumnas, documentosVistos, errores, filasValidas);
                 nroFila++;
             }
 
@@ -181,6 +212,14 @@ public class CsvCandidatoParser {
             }
         }
 
+        if (indiceColumnas.containsKey(COL_NRO_CANDIDATO)) {
+            errores.add(new DetalleErrorFilaDTO(
+                    1,
+                    "Nro candidato",
+                    "La columna 'Nro candidato' no debe incluirse en el archivo CSV; el número de candidato es asignado automáticamente por el sistema."
+            ));
+        }
+
         for (String requerida : COLUMNAS_REQUERIDAS) {
             if (!indiceColumnas.containsKey(requerida)) {
                 errores.add(new DetalleErrorFilaDTO(
@@ -198,16 +237,15 @@ public class CsvCandidatoParser {
             String linea,
             int nroFila,
             Map<String, Integer> indiceColumnas,
-            Map<String, Integer> nrosCandidatoVistos,
+            Map<String, Integer> documentosVistos,
             List<DetalleErrorFilaDTO> errores,
             List<FilaCandidatoCsvDTO> filasValidas
     ) {
         String[] celdas = linea.split(SEPARADOR, -1);
 
-        String nroCandidato = obtenerValor(celdas, indiceColumnas.get(COL_NRO_CANDIDATO));
         String apellido = obtenerValor(celdas, indiceColumnas.get(COL_APELLIDO));
         String nombre = obtenerValor(celdas, indiceColumnas.get(COL_NOMBRE));
-        String nroDocumento = obtenerValor(celdas, indiceColumnas.get(COL_NRO_DOCUMENTO));
+        String nroDocumentoCrudo = obtenerValor(celdas, indiceColumnas.get(COL_NRO_DOCUMENTO));
         String tipoDocStr = obtenerValor(celdas, indiceColumnas.get(COL_TIPO_DOCUMENTO));
         String fechaNacStr = obtenerValor(celdas, indiceColumnas.get(COL_FECHA_NACIMIENTO));
         String generoStr = obtenerValor(celdas, indiceColumnas.get(COL_GENERO));
@@ -218,44 +256,19 @@ public class CsvCandidatoParser {
 
         boolean filaConError = false;
 
-        // 1. Nro candidato
-        if (nroCandidato.isBlank()) {
-            errores.add(new DetalleErrorFilaDTO(nroFila, "Nro candidato", "El número de candidato es obligatorio y no puede estar vacío."));
-            filaConError = true;
-        } else {
-            String claveUnica = nroCandidato.trim().toUpperCase(Locale.ROOT);
-            if (nrosCandidatoVistos.containsKey(claveUnica)) {
-                int filaPrevia = nrosCandidatoVistos.get(claveUnica);
-                errores.add(new DetalleErrorFilaDTO(
-                        nroFila,
-                        "Nro candidato",
-                        "El número de candidato '" + nroCandidato + "' está duplicado dentro del archivo (ya figura en fila " + filaPrevia + ")."
-                ));
-                filaConError = true;
-            } else {
-                nrosCandidatoVistos.put(claveUnica, nroFila);
-            }
-        }
-
-        // 2. Apellido
+        // 1. Apellido
         if (apellido.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Apellido", "El apellido es obligatorio y no puede estar vacío."));
             filaConError = true;
         }
 
-        // 3. Nombre
+        // 2. Nombre
         if (nombre.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Nombre", "El nombre es obligatorio y no puede estar vacío."));
             filaConError = true;
         }
 
-        // 4. Nro documento
-        if (nroDocumento.isBlank()) {
-            errores.add(new DetalleErrorFilaDTO(nroFila, "Nro documento", "El número de documento es obligatorio y no puede estar vacío."));
-            filaConError = true;
-        }
-
-        // 5. Tipo documento
+        // 3. Tipo documento
         TipoDocumento tipoDocumento = null;
         if (tipoDocStr.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Tipo documento", "El tipo de documento es obligatorio."));
@@ -273,7 +286,44 @@ public class CsvCandidatoParser {
             }
         }
 
-        // 6. Fecha de nacimiento (yyyy-MM-dd estricto)
+        // 4. Nro documento (normalizado según tipo + control de duplicados intra-archivo por Tipo + Nro)
+        String nroDocumentoNormalizado = normalizarNroDocumento(tipoDocumento, nroDocumentoCrudo);
+        boolean nroDocumentoValido = false;
+        if (nroDocumentoNormalizado.isBlank()) {
+            errores.add(new DetalleErrorFilaDTO(nroFila, "Nro documento", "El número de documento es obligatorio y no puede estar vacío."));
+            filaConError = true;
+        } else if ((tipoDocumento == TipoDocumento.DNI
+                || tipoDocumento == TipoDocumento.LE
+                || tipoDocumento == TipoDocumento.LC)
+                && !SOLO_DIGITOS_PATTERN.matcher(nroDocumentoNormalizado).matches()) {
+            errores.add(new DetalleErrorFilaDTO(
+                    nroFila,
+                    "Nro documento",
+                    "El número de documento '" + nroDocumentoCrudo + "' para " + tipoDocumento.name()
+                            + " debe contener solo dígitos (los puntos y espacios se quitan automáticamente)."
+            ));
+            filaConError = true;
+        } else {
+            nroDocumentoValido = true;
+        }
+
+        if (tipoDocumento != null && nroDocumentoValido) {
+            String claveDocumento = tipoDocumento.name() + "::" + nroDocumentoNormalizado;
+            if (documentosVistos.containsKey(claveDocumento)) {
+                int filaPrevia = documentosVistos.get(claveDocumento);
+                errores.add(new DetalleErrorFilaDTO(
+                        nroFila,
+                        "Nro documento",
+                        "El documento " + tipoDocumento.name() + " '" + nroDocumentoNormalizado
+                                + "' está duplicado dentro del archivo (ya figura en fila " + filaPrevia + ")."
+                ));
+                filaConError = true;
+            } else {
+                documentosVistos.put(claveDocumento, nroFila);
+            }
+        }
+
+        // 5. Fecha de nacimiento (yyyy-MM-dd estricto)
         LocalDate fechaNacimiento = null;
         if (fechaNacStr.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Fecha de nacimiento", "La fecha de nacimiento es obligatoria."));
@@ -291,7 +341,7 @@ public class CsvCandidatoParser {
             }
         }
 
-        // 7. Género
+        // 6. Género
         Genero genero = null;
         if (generoStr.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Género", "El género es obligatorio."));
@@ -309,7 +359,7 @@ public class CsvCandidatoParser {
             }
         }
 
-        // 8. Nacionalidad
+        // 7. Nacionalidad
         String nacionalidadCanonica = null;
         if (nacionalidad.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Nacionalidad", "La nacionalidad es obligatoria y no puede estar vacía."));
@@ -328,7 +378,7 @@ public class CsvCandidatoParser {
             }
         }
 
-        // 9. Email
+        // 8. Email
         if (email.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Email", "El email es obligatorio y no puede estar vacío."));
             filaConError = true;
@@ -341,7 +391,7 @@ public class CsvCandidatoParser {
             filaConError = true;
         }
 
-        // 10. Escolaridad
+        // 9. Escolaridad
         String escolaridadCanonica = null;
         if (escolaridad.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Escolaridad", "La escolaridad es obligatoria y no puede estar vacía."));
@@ -360,7 +410,7 @@ public class CsvCandidatoParser {
             }
         }
 
-        // 11. Eliminado (True / False case-insensitive)
+        // 10. Eliminado (True / False case-insensitive)
         Boolean eliminado = null;
         if (eliminadoStr.isBlank()) {
             errores.add(new DetalleErrorFilaDTO(nroFila, "Eliminado", "El campo Eliminado es obligatorio."));
@@ -384,10 +434,9 @@ public class CsvCandidatoParser {
         if (!filaConError) {
             filasValidas.add(new FilaCandidatoCsvDTO(
                     nroFila,
-                    nroCandidato.trim(),
                     apellido.trim().toUpperCase(Locale.ROOT),
                     nombre.trim().toUpperCase(Locale.ROOT),
-                    nroDocumento.trim(),
+                    nroDocumentoNormalizado,
                     tipoDocumento,
                     fechaNacimiento,
                     genero,
