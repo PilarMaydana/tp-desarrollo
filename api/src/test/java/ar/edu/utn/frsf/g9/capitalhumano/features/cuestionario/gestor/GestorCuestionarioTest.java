@@ -5,13 +5,18 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.Candidato;
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.TipoDocumento;
 import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.model.Competencia;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao.CuestionarioDAO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao.ResultadoDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.CuestionarioIniciadoDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.InstruccionesCuestionarioDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.ResponderBloqueRequestDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.ResponderBloqueResponseDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.RespuestaItemDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.BloqueCuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.Cuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.EstadoCuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.PreguntaAsignada;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.RespuestaCandidato;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.Resultado;
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.dao.FactorDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.model.Factor;
 import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.OpcionRespuesta;
@@ -21,6 +26,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.CaracteristicaPues
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.Puesto;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ValidacionException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.security.ContextoSeguridad;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -28,8 +34,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -69,6 +78,9 @@ class GestorCuestionarioTest {
     private PuestoDAO puestoDAO;
 
     @Mock
+    private ResultadoDAO resultadoDAO;
+
+    @Mock
     private ContextoSeguridad contextoSeguridad;
 
     private CuestionarioProperties properties;
@@ -82,6 +94,8 @@ class GestorCuestionarioTest {
                 factorDAO,
                 cuestionarioDAO,
                 puestoDAO,
+                resultadoDAO,
+                new CalculadorResultadosCuestionario(),
                 contextoSeguridad,
                 properties,
                 CLOCK_FIJO,
@@ -522,6 +536,270 @@ class GestorCuestionarioTest {
                     assertThat(op.orden()).isNotNull();
                     assertThat(op.descripcion()).isNotBlank();
                 });
+    }
+
+    // =========================================================================
+    // Tests de CU 026 Parte 2: Responder bloques, validación, avance y cierre
+    // =========================================================================
+
+    @Test
+    @DisplayName("CU 026 Flujo 8.A: bloque correcto guarda respuestas, marca bloque respondido y devuelve bloqueSiguiente sin incrementar accesos")
+    void responderBloque_bloqueCorrectoConMasBloques_avanzaAlSiguiente() throws Exception {
+        Cuestionario cuestionario = crearCuestionarioConDosBloques(6L, EstadoCuestionario.EN_PROCESO, false);
+        cuestionario.setFechaCreacion(AHORA.minusHours(2));
+        cuestionario.setFechaInicio(AHORA.minusMinutes(10));
+        cuestionario.setCantidadAccesos(1);
+
+        ResponderBloqueRequestDTO request = new ResponderBloqueRequestDTO(List.of(
+                new RespuestaItemDTO(1001L, 12L),
+                new RespuestaItemDTO(1002L, 21L),
+                new RespuestaItemDTO(1003L, 32L)
+        ));
+
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(6L, 1L)).thenReturn(Optional.of(cuestionario));
+        when(cuestionarioDAO.save(any(Cuestionario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponderBloqueResponseDTO respuesta = gestorCuestionario.responderBloque(6L, 1, request);
+
+        assertThat(respuesta.completado()).isFalse();
+        assertThat(respuesta.estado()).isNull();
+        assertThat(respuesta.mensaje()).isNull();
+        assertThat(respuesta.segundosRestantes()).isEqualTo(50L * 60L);
+        assertThat(respuesta.bloqueSiguiente()).isNotNull();
+        assertThat(respuesta.bloqueSiguiente().numero()).isEqualTo(2);
+        assertThat(respuesta.bloqueSiguiente().completado()).isFalse();
+        assertThat(respuesta.bloqueSiguiente().preguntas()).hasSize(3);
+
+        BloqueCuestionario bloque1 = cuestionario.getBloques().get(0);
+        assertThat(bloque1.getRespondido()).isTrue();
+        assertThat(bloque1.getFechaRespuesta()).isEqualTo(AHORA);
+        assertThat(bloque1.getPreguntasAsignadas()).allSatisfy(pa -> {
+            assertThat(pa.getRespuestaCandidato()).isNotNull();
+            assertThat(pa.getRespuestaCandidato().getFechaRespuesta()).isEqualTo(AHORA);
+        });
+        assertThat(cuestionario.getUltimoBloqueRespondido()).isEqualTo(1);
+        assertThat(cuestionario.getCantidadAccesos()).isEqualTo(1); // NO incrementa accesos
+        assertThat(cuestionario.getEstado()).isEqualTo(EstadoCuestionario.EN_PROCESO);
+
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        assertThat(mapper.writeValueAsString(respuesta)).doesNotContainIgnoringCase("ponderacion");
+
+        verify(cuestionarioDAO).save(cuestionario);
+        verify(resultadoDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CU 026 Flujo 6.A: preguntas sin responder lanza ValidacionException (400) con detalle por pregunta y sin guardar nada")
+    void responderBloque_preguntasSinResponder_lanza400SinGuardarNada() {
+        Cuestionario cuestionario = crearCuestionarioConDosBloques(6L, EstadoCuestionario.EN_PROCESO, false);
+        cuestionario.setFechaCreacion(AHORA.minusHours(2));
+        cuestionario.setFechaInicio(AHORA.minusMinutes(10));
+        cuestionario.setCantidadAccesos(1);
+
+        // Solo responde pregunta 1001L; deja 1002L con opcionId null y omite 1003L
+        ResponderBloqueRequestDTO request = new ResponderBloqueRequestDTO(List.of(
+                new RespuestaItemDTO(1001L, 12L),
+                new RespuestaItemDTO(1002L, null)
+        ));
+
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(6L, 1L)).thenReturn(Optional.of(cuestionario));
+
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(6L, 1, request))
+                .isInstanceOf(ValidacionException.class)
+                .satisfies(ex -> {
+                    ValidacionException ve = (ValidacionException) ex;
+                    assertThat(ve.getCodigo()).isEqualTo("VALIDACION");
+                    assertThat(ve.getDetalles()).hasSize(2);
+                    assertThat(ve.getDetalles())
+                            .extracting(ValidacionException.DetalleError::campo)
+                            .containsExactly("1002", "1003");
+                });
+
+        BloqueCuestionario bloque1 = cuestionario.getBloques().get(0);
+        assertThat(bloque1.getRespondido()).isFalse();
+        assertThat(bloque1.getPreguntasAsignadas()).allSatisfy(pa -> assertThat(pa.getRespuestaCandidato()).isNull());
+        verify(cuestionarioDAO, never()).save(any());
+        verify(resultadoDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CU 026: opción que no pertenece a la pregunta lanza ReglaNegocioException (422) sin guardar nada")
+    void responderBloque_opcionAjenaALaPregunta_lanza422() {
+        Cuestionario cuestionario = crearCuestionarioConDosBloques(6L, EstadoCuestionario.EN_PROCESO, false);
+        cuestionario.setFechaInicio(AHORA.minusMinutes(10));
+
+        // Pregunta 1001L tiene opciones 11L y 12L; enviamos 21L (de pregunta 2)
+        ResponderBloqueRequestDTO request = new ResponderBloqueRequestDTO(List.of(
+                new RespuestaItemDTO(1001L, 21L),
+                new RespuestaItemDTO(1002L, 21L),
+                new RespuestaItemDTO(1003L, 32L)
+        ));
+
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(6L, 1L)).thenReturn(Optional.of(cuestionario));
+
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(6L, 1, request))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("opción");
+
+        assertThat(cuestionario.getBloques().get(0).getRespondido()).isFalse();
+        verify(cuestionarioDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CU 026: preguntaAsignadaId que no pertenece al bloque lanza ReglaNegocioException (422)")
+    void responderBloque_preguntaAjenaAlBloque_lanza422() {
+        Cuestionario cuestionario = crearCuestionarioConDosBloques(6L, EstadoCuestionario.EN_PROCESO, false);
+        cuestionario.setFechaInicio(AHORA.minusMinutes(10));
+
+        // 1004L pertenece al bloque 2, no al bloque 1
+        ResponderBloqueRequestDTO request = new ResponderBloqueRequestDTO(List.of(
+                new RespuestaItemDTO(1001L, 12L),
+                new RespuestaItemDTO(1002L, 21L),
+                new RespuestaItemDTO(1004L, 42L)
+        ));
+
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(6L, 1L)).thenReturn(Optional.of(cuestionario));
+
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(6L, 1, request))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("no pertenece al bloque");
+
+        verify(cuestionarioDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CU 026: bloque ya completado o que no es el actual lanza 422; bloque inexistente lanza 404")
+    void responderBloque_bloqueNoActualYaCompletadoOInexistente() {
+        Cuestionario cuestionario = crearCuestionarioConDosBloques(7L, EstadoCuestionario.EN_PROCESO, true);
+        cuestionario.setFechaInicio(AHORA.minusMinutes(10));
+
+        // Bloque 1 ya completado -> 422
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(7L, 1L)).thenReturn(Optional.of(cuestionario));
+        ResponderBloqueRequestDTO vacio = new ResponderBloqueRequestDTO(List.of());
+
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(7L, 1, vacio))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("ya fue respondido");
+
+        // Bloque 99 inexistente -> 404
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(7L, 99, vacio))
+                .isInstanceOf(RecursoNoEncontradoException.class);
+
+        // Bloque 2 cuando bloque 1 aún está pendiente -> 422
+        Cuestionario cPendiente = crearCuestionarioConDosBloques(6L, EstadoCuestionario.EN_PROCESO, false);
+        cPendiente.setFechaInicio(AHORA.minusMinutes(10));
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(6L, 1L)).thenReturn(Optional.of(cPendiente));
+
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(6L, 2, vacio))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("no es el bloque actual");
+
+        verify(cuestionarioDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CU 026 Flujo 1.A al responder bloque: tiempo agotado persiste estado INCOMPLETO y lanza 422")
+    void responderBloque_tiempoAgotado_persisteIncompletoYLanza422() {
+        Cuestionario cuestionario = crearCuestionarioConDosBloques(9L, EstadoCuestionario.EN_PROCESO, false);
+        cuestionario.setFechaCreacion(AHORA.minusHours(3));
+        cuestionario.setFechaInicio(AHORA.minusMinutes(61));
+        cuestionario.setCantidadAccesos(1);
+
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(9L, 1L)).thenReturn(Optional.of(cuestionario));
+
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(9L, 1, new ResponderBloqueRequestDTO(List.of())))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("tiempo máximo");
+
+        assertThat(cuestionario.getEstado()).isEqualTo(EstadoCuestionario.INCOMPLETO);
+        assertThat(cuestionario.getFechaCambioEstado()).isEqualTo(AHORA);
+        assertThat(cuestionario.getTiempoRestanteSegundos()).isZero();
+        assertThat(cuestionario.getCantidadAccesos()).isEqualTo(1);
+        verify(cuestionarioDAO).save(cuestionario);
+        verify(resultadoDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CU 026: cuestionario en estado ACTIVO (no EN_PROCESO) lanza 422 al responder bloque")
+    void responderBloque_cuestionarioNoEnProceso_lanza422() {
+        Cuestionario cuestionario = crearCuestionarioConDosBloques(6L, EstadoCuestionario.ACTIVO, false);
+        cuestionario.setFechaCreacion(AHORA.minusHours(1));
+
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(6L, 1L)).thenReturn(Optional.of(cuestionario));
+
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(6L, 1, new ResponderBloqueRequestDTO(List.of())))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("EN_PROCESO");
+
+        verify(cuestionarioDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CU 026: cuestionario ajeno al responder bloque lanza 404 (RecursoNoEncontradoException)")
+    void responderBloque_cuestionarioAjeno_lanza404() {
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(2L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> gestorCuestionario.responderBloque(2L, 1, new ResponderBloqueRequestDTO(List.of())))
+                .isInstanceOf(RecursoNoEncontradoException.class);
+    }
+
+    @Test
+    @DisplayName("CU 026 Paso 8: último bloque calcula y guarda resultados, pasa a COMPLETO y devuelve respuesta sin puntajes")
+    void responderBloque_ultimoBloque_cierraConCompletoYGuardaResultados() throws Exception {
+        Competencia comp = new Competencia(5L, "TEC-01", "COMPETENCIAS TÉCNICAS", "DESC");
+        Factor factor = new Factor(3L, "FAC-03", "DESARROLLO", "DESC", 1, comp);
+
+        Cuestionario cuestionario = crearCuestionarioBase(12L, EstadoCuestionario.EN_PROCESO);
+        cuestionario.getPuesto().addCaracteristica(new CaracteristicaPuesto(5L, cuestionario.getPuesto(), comp, 9.5));
+        cuestionario.setFechaCreacion(AHORA.minusHours(1));
+        cuestionario.setFechaInicio(AHORA.minusMinutes(10));
+        cuestionario.setCantidadAccesos(1);
+
+        BloqueCuestionario unicoBloque = new BloqueCuestionario(1);
+        unicoBloque.setId(501L);
+        unicoBloque.addPreguntaAsignada(crearPreguntaAsignada(2001L, crearPreguntaConOpciones(1L, "P1", "E1", factor), 1));
+        unicoBloque.addPreguntaAsignada(crearPreguntaAsignada(2002L, crearPreguntaConOpciones(2L, "P2", "E2", factor), 2));
+        cuestionario.addBloque(unicoBloque);
+
+        // Opciones: 12L -> pond 8.0, 21L -> pond 2.0 => totalFactor = (8 + 2) / 2 = 5.00
+        ResponderBloqueRequestDTO request = new ResponderBloqueRequestDTO(List.of(
+                new RespuestaItemDTO(2001L, 12L),
+                new RespuestaItemDTO(2002L, 21L)
+        ));
+
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(12L, 1L)).thenReturn(Optional.of(cuestionario));
+        when(cuestionarioDAO.save(any(Cuestionario.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(resultadoDAO.save(any(Resultado.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponderBloqueResponseDTO respuesta = gestorCuestionario.responderBloque(12L, 1, request);
+
+        assertThat(respuesta.completado()).isTrue();
+        assertThat(respuesta.estado()).isEqualTo(EstadoCuestionario.COMPLETO);
+        assertThat(respuesta.mensaje()).isEqualTo("El cuestionario ha sido completado con éxito");
+        assertThat(respuesta.bloqueSiguiente()).isNull();
+        assertThat(respuesta.segundosRestantes()).isNull();
+
+        assertThat(cuestionario.getEstado()).isEqualTo(EstadoCuestionario.COMPLETO);
+        assertThat(cuestionario.getFechaFinalizacion()).isEqualTo(AHORA);
+        assertThat(cuestionario.getFechaCambioEstado()).isEqualTo(AHORA);
+        assertThat(cuestionario.getTiempoRestanteSegundos()).isZero();
+        assertThat(cuestionario.getUltimoBloqueRespondido()).isEqualTo(1);
+        assertThat(cuestionario.getCantidadAccesos()).isEqualTo(1);
+
+        ArgumentCaptor<Resultado> resultadoCaptor = ArgumentCaptor.forClass(Resultado.class);
+        verify(resultadoDAO).save(resultadoCaptor.capture());
+        Resultado guardado = resultadoCaptor.getValue();
+        assertThat(guardado.getFechaCalculo()).isEqualTo(AHORA);
+        assertThat(guardado.getPuntajeObtenido()).isEqualByComparingTo(new BigDecimal("5.00"));
+        assertThat(guardado.getResultadosCompetencias()).hasSize(1);
+        assertThat(guardado.getResultadosCompetencias().get(0).getTotalCompetencia())
+                .isEqualByComparingTo(new BigDecimal("5.00"));
+
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        String json = mapper.writeValueAsString(respuesta);
+        assertThat(json).doesNotContainIgnoringCase("puntaje");
+        assertThat(json).doesNotContainIgnoringCase("totalFactor");
+        assertThat(json).doesNotContainIgnoringCase("totalCompetencia");
     }
 
     // =========================================================================
