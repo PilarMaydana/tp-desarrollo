@@ -4,9 +4,11 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.auth.exception.AutenticacionExc
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ValidacionException;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -102,6 +104,18 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("4.b. ValidacionException desde gestor -> 400, codigo VALIDACION y detalles[]")
+    void testValidacionException() throws Exception {
+        mockMvc.perform(get("/test/validacion-gestor"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.codigo").value("VALIDACION"))
+                .andExpect(jsonPath("$.path").value("/test/validacion-gestor"))
+                .andExpect(jsonPath("$.detalles[0].campo").value("10"))
+                .andExpect(jsonPath("$.detalles[0].mensaje").value("Falta responder la pregunta 1"));
+    }
+
+    @Test
     @DisplayName("5. JSON malformado -> 400, codigo CUERPO_INVALIDO")
     void testJsonMalformado() throws Exception {
         mockMvc.perform(post("/test/cuerpo")
@@ -153,6 +167,14 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/regla-negocio")
         public void reglaNegocio() {
             throw new ReglaNegocioException("No se puede eliminar una postulacion activa");
+        }
+
+        @GetMapping("/validacion-gestor")
+        public void validacionGestor() {
+            throw new ValidacionException(
+                    "Faltan preguntas sin responder",
+                    List.of(new ValidacionException.DetalleError("10", "Falta responder la pregunta 1"))
+            );
         }
 
         @GetMapping("/autenticacion")

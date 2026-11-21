@@ -1,19 +1,34 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao.CuestionarioDAO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao.ResultadoDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.CuestionarioIniciadoDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.InstruccionesCuestionarioDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.ResponderBloqueRequestDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.ResponderBloqueResponseDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.RespuestaItemDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.gestor.GestorCuestionario;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.BloqueCuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.Cuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.EstadoCuestionario;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.PreguntaAsignada;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.Resultado;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.ResultadoCompetencia;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.ResultadoFactor;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ValidacionException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +50,12 @@ class CuestionarioIntegrationTest {
 
     @Autowired
     private CuestionarioDAO cuestionarioDAO;
+
+    @Autowired
+    private ResultadoDAO resultadoDAO;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @Test
     @DisplayName("Seed (a) ID 6: instrucciones no incrementa accesos; iniciar pasa a EN_PROCESO y devuelve bloque 1")
@@ -180,6 +201,200 @@ class CuestionarioIntegrationTest {
                 .isInstanceOf(RecursoNoEncontradoException.class);
         assertThatThrownBy(() -> gestorCuestionario.iniciarCuestionario(2L))
                 .isInstanceOf(RecursoNoEncontradoException.class);
+    }
+
+    @Test
+    @DisplayName("CU 026 Flujo completo E2E sobre seed (a) ID 6: iniciar -> responder bloque 1 (8.A) -> responder bloque 2 -> COMPLETO + resultados en H2")
+    void seedA_flujoCompletoIniciarResponderTodosLosBloquesYCalcularResultados() {
+        Cuestionario original = cuestionarioDAO.findById(6L).orElseThrow();
+        EstadoCuestionario estadoOrig = original.getEstado();
+        LocalDateTime fechaInicioOrig = original.getFechaInicio();
+        LocalDateTime fechaFinOrig = original.getFechaFinalizacion();
+        LocalDateTime fechaCambioOrig = original.getFechaCambioEstado();
+        Integer accesosOrig = original.getCantidadAccesos();
+        Integer restanteOrig = original.getTiempoRestanteSegundos();
+        Integer ultimoBloqueOrig = original.getUltimoBloqueRespondido();
+
+        try {
+            // 1. Iniciar cuestionario (a) -> pasa a EN_PROCESO y devuelve bloque 1 (preguntas asignadas 1, 2, 3)
+            CuestionarioIniciadoDTO iniciado = gestorCuestionario.iniciarCuestionario(6L);
+            assertThat(iniciado.estado()).isEqualTo(EstadoCuestionario.EN_PROCESO);
+            assertThat(iniciado.bloqueActual().numero()).isEqualTo(1);
+            assertThat(iniciado.bloqueActual().preguntas()).hasSize(3);
+
+            // 1.b Validar Flujo 6.A: falta responder 2 preguntas -> 400 VALIDACION sin guardar nada
+            assertThatThrownBy(() -> gestorCuestionario.responderBloque(6L, 1, new ResponderBloqueRequestDTO(
+                    List.of(new RespuestaItemDTO(1L, 1L))
+            )))
+                    .isInstanceOf(ValidacionException.class)
+                    .satisfies(ex -> assertThat(((ValidacionException) ex).getDetalles()).hasSize(2));
+
+            // 2. Responder bloque 1 completo:
+            //    PA 1 -> preg 1 (FAC-03) -> opcion 1 (10.0)
+            //    PA 2 -> preg 14 (FAC-07) -> opcion 30 (6.0)
+            //    PA 3 -> preg 12 (FAC-06) -> opcion 26 (10.0)
+            ResponderBloqueResponseDTO respBloque1 = gestorCuestionario.responderBloque(6L, 1, new ResponderBloqueRequestDTO(
+                    List.of(
+                            new RespuestaItemDTO(1L, 1L),
+                            new RespuestaItemDTO(2L, 30L),
+                            new RespuestaItemDTO(3L, 26L)
+                    )
+            ));
+            assertThat(respBloque1.completado()).isFalse();
+            assertThat(respBloque1.bloqueSiguiente()).isNotNull();
+            assertThat(respBloque1.bloqueSiguiente().numero()).isEqualTo(2);
+            assertThat(respBloque1.segundosRestantes()).isPositive();
+
+            // 3. Responder bloque 2 completo (último bloque):
+            //    PA 4 -> preg 2 (FAC-03) -> opcion 3 (10.0) => FAC-03 = (10 + 10) / 2 = 10.00
+            //    PA 5 -> preg 15 (FAC-07) -> opcion 34 (6.0) => FAC-07 = (6 + 6) / 2 = 6.00 => TEC-01 = (10 + 6) / 2 = 8.00
+            //    PA 6 -> preg 13 (FAC-06) -> opcion 27 (0.0) => FAC-06 = (10 + 0) / 2 = 5.00 => LID-01 = 5.00 / 1 = 5.00
+            //    puntajeObtenido = (8.00 + 5.00) / 2 = 6.50
+            ResponderBloqueResponseDTO respBloque2 = gestorCuestionario.responderBloque(6L, 2, new ResponderBloqueRequestDTO(
+                    List.of(
+                            new RespuestaItemDTO(4L, 3L),
+                            new RespuestaItemDTO(5L, 34L),
+                            new RespuestaItemDTO(6L, 27L)
+                    )
+            ));
+            assertThat(respBloque2.completado()).isTrue();
+            assertThat(respBloque2.estado()).isEqualTo(EstadoCuestionario.COMPLETO);
+            assertThat(respBloque2.mensaje()).isEqualTo("El cuestionario ha sido completado con éxito");
+
+            // 4. Verificar en H2 cuestionario COMPLETO y jerarquía Resultado -> ResultadoCompetencia -> ResultadoFactor
+            transactionTemplate.executeWithoutResult(status -> {
+                Cuestionario enBase = cuestionarioDAO.findById(6L).orElseThrow();
+                assertThat(enBase.getEstado()).isEqualTo(EstadoCuestionario.COMPLETO);
+                assertThat(enBase.getFechaFinalizacion()).isNotNull();
+                assertThat(enBase.getUltimoBloqueRespondido()).isEqualTo(2);
+                assertThat(enBase.getCantidadAccesos()).isEqualTo(1);
+                assertThat(enBase.getBloques()).allSatisfy(b -> assertThat(b.getRespondido()).isTrue());
+
+                Resultado resultado = resultadoDAO.findByCuestionarioId(6L).orElseThrow();
+                assertThat(resultado.getFechaCalculo()).isNotNull();
+                assertThat(resultado.getPuntajeObtenido()).isEqualByComparingTo(new BigDecimal("6.50"));
+                assertThat(resultado.getResultadosCompetencias()).hasSize(2);
+
+                Map<String, ResultadoCompetencia> porCodigoComp = resultado.getResultadosCompetencias().stream()
+                        .collect(Collectors.toMap(rc -> rc.getCompetencia().getCodigo(), rc -> rc));
+
+                ResultadoCompetencia tec = porCodigoComp.get("TEC-01");
+                assertThat(tec.getTotalCompetencia()).isEqualByComparingTo(new BigDecimal("8.00"));
+                assertThat(tec.getCaracteristicaPuesto()).isNotNull();
+                assertThat(tec.getCaracteristicaPuesto().getPonderacionRequerida()).isEqualTo(9.5);
+                Map<String, BigDecimal> factoresTec = tec.getResultadosFactores().stream()
+                        .collect(Collectors.toMap(rf -> rf.getFactor().getCodigo(), ResultadoFactor::getTotalFactor));
+                assertThat(factoresTec.get("FAC-03")).isEqualByComparingTo(new BigDecimal("10.00"));
+                assertThat(factoresTec.get("FAC-07")).isEqualByComparingTo(new BigDecimal("6.00"));
+
+                ResultadoCompetencia lid = porCodigoComp.get("LID-01");
+                assertThat(lid.getTotalCompetencia()).isEqualByComparingTo(new BigDecimal("5.00"));
+                assertThat(lid.getCaracteristicaPuesto()).isNotNull();
+                assertThat(lid.getCaracteristicaPuesto().getPonderacionRequerida()).isEqualTo(8.0);
+                assertThat(lid.getResultadosFactores()).hasSize(1);
+                assertThat(lid.getResultadosFactores().get(0).getTotalFactor())
+                        .isEqualByComparingTo(new BigDecimal("5.00"));
+            });
+        } finally {
+            restaurarConBloquesYResultado(6L, estadoOrig, fechaInicioOrig, fechaFinOrig,
+                    fechaCambioOrig, accesosOrig, restanteOrig, ultimoBloqueOrig);
+        }
+    }
+
+    @Test
+    @DisplayName("Seed (h) ID 12: cierre directo en un único bloque calcula resultados exactos en H2 y persiste COMPLETO")
+    void seedH_cierreDirectoEnUnBloqueYCalculoExacto() {
+        Cuestionario original = cuestionarioDAO.findById(12L).orElseThrow();
+        EstadoCuestionario estadoOrig = original.getEstado();
+        LocalDateTime fechaInicioOrig = original.getFechaInicio();
+        LocalDateTime fechaFinOrig = original.getFechaFinalizacion();
+        LocalDateTime fechaCambioOrig = original.getFechaCambioEstado();
+        Integer accesosOrig = original.getCantidadAccesos();
+        Integer restanteOrig = original.getTiempoRestanteSegundos();
+        Integer ultimoBloqueOrig = original.getUltimoBloqueRespondido();
+
+        try {
+            // Cuestionario 12 bloque 1: PA 13..18
+            ResponderBloqueResponseDTO resp = gestorCuestionario.responderBloque(12L, 1, new ResponderBloqueRequestDTO(
+                    List.of(
+                            new RespuestaItemDTO(13L, 1L),  // preg 1 (FAC-03): 10.0
+                            new RespuestaItemDTO(14L, 3L),  // preg 2 (FAC-03): 10.0 -> FAC-03 = 10.00
+                            new RespuestaItemDTO(15L, 30L), // preg 14 (FAC-07): 6.0
+                            new RespuestaItemDTO(16L, 34L), // preg 15 (FAC-07): 6.0 -> FAC-07 = 6.00 -> TEC-01 = 8.00
+                            new RespuestaItemDTO(17L, 26L), // preg 12 (FAC-06): 10.0
+                            new RespuestaItemDTO(18L, 27L)  // preg 13 (FAC-06): 0.0 -> FAC-06 = 5.00 -> LID-01 = 5.00
+                    )
+            ));
+
+            assertThat(resp.completado()).isTrue();
+            assertThat(resp.estado()).isEqualTo(EstadoCuestionario.COMPLETO);
+            assertThat(resp.mensaje()).isEqualTo("El cuestionario ha sido completado con éxito");
+
+            transactionTemplate.executeWithoutResult(status -> {
+                Resultado res = resultadoDAO.findByCuestionarioId(12L).orElseThrow();
+                assertThat(res.getPuntajeObtenido()).isEqualByComparingTo(new BigDecimal("6.50"));
+                assertThat(res.getResultadosCompetencias()).hasSize(2);
+            });
+        } finally {
+            restaurarConBloquesYResultado(12L, estadoOrig, fechaInicioOrig, fechaFinOrig,
+                    fechaCambioOrig, accesosOrig, restanteOrig, ultimoBloqueOrig);
+        }
+    }
+
+    @Test
+    @DisplayName("Seed (d) ID 9 — Flujo 1.A al responder bloque: tiempo agotado lanza 422 y PERSISTE INCOMPLETO en H2")
+    void seedD_responderBloqueTiempoAgotado_persisteIncompleto() {
+        Cuestionario original = cuestionarioDAO.findById(9L).orElseThrow();
+        EstadoCuestionario estadoOrig = original.getEstado();
+        LocalDateTime fechaInicioOrig = original.getFechaInicio();
+        LocalDateTime fechaCambioOrig = original.getFechaCambioEstado();
+        Integer accesosOrig = original.getCantidadAccesos();
+        Integer restanteOrig = original.getTiempoRestanteSegundos();
+
+        try {
+            assertThatThrownBy(() -> gestorCuestionario.responderBloque(9L, 1, new ResponderBloqueRequestDTO(List.of())))
+                    .isInstanceOf(ReglaNegocioException.class);
+
+            Cuestionario enBase = cuestionarioDAO.findById(9L).orElseThrow();
+            assertThat(enBase.getEstado()).isEqualTo(EstadoCuestionario.INCOMPLETO);
+            assertThat(enBase.getFechaCambioEstado()).isAfter(fechaCambioOrig);
+        } finally {
+            restaurar(9L, estadoOrig, fechaInicioOrig, fechaCambioOrig, accesosOrig, restanteOrig);
+        }
+    }
+
+    private void restaurarConBloquesYResultado(Long id,
+                                               EstadoCuestionario estado,
+                                               LocalDateTime fechaInicio,
+                                               LocalDateTime fechaFinalizacion,
+                                               LocalDateTime fechaCambio,
+                                               Integer accesos,
+                                               Integer restante,
+                                               Integer ultimoBloque) {
+        transactionTemplate.executeWithoutResult(status -> {
+            resultadoDAO.findByCuestionarioId(id).ifPresent(r -> {
+                resultadoDAO.delete(r);
+                resultadoDAO.flush();
+            });
+
+            Cuestionario c = cuestionarioDAO.findById(id).orElseThrow();
+            c.setEstado(estado);
+            c.setFechaInicio(fechaInicio);
+            c.setFechaFinalizacion(fechaFinalizacion);
+            c.setFechaCambioEstado(fechaCambio);
+            c.setCantidadAccesos(accesos);
+            c.setTiempoRestanteSegundos(restante);
+            c.setUltimoBloqueRespondido(ultimoBloque);
+
+            for (BloqueCuestionario b : c.getBloques()) {
+                b.setRespondido(Boolean.FALSE);
+                b.setFechaRespuesta(null);
+                for (PreguntaAsignada pa : b.getPreguntasAsignadas()) {
+                    pa.setRespuestaCandidato(null);
+                }
+            }
+            cuestionarioDAO.saveAndFlush(c);
+        });
     }
 
     private void restaurar(Long id,
