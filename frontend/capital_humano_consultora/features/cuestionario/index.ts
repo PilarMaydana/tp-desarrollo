@@ -2,6 +2,7 @@ export * from './types';
 export * from './services/cuestionarioService';
 export * from './hooks/useCuestionario';
 export { CandidateHeaderLayout } from './components/CandidateHeaderLayout';
+export { CandidatoCuestionarioPortalScreen } from './components/CandidatoCuestionarioPortalScreen';
 export { CompletarCuestionarioScreen } from './components/CompletarCuestionarioScreen';
 export { EstadoCuestionarioScreen } from './components/EstadoCuestionarioScreen';
 export { InstruccionesCuestionario } from './components/InstruccionesCuestionario';
