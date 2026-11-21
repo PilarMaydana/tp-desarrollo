@@ -102,7 +102,9 @@ public class Cuestionario extends EntidadAuditable {
     /**
      * Divide las preguntas seleccionadas en instancias de {@link BloqueCuestionario}
      * numeradas secuencialmente {@code 1..N} y crea sus {@link PreguntaAsignada}
-     * con {@code nroOrden} secuencial, respetando {@link #cantidadPreguntasPorBloque}.
+     * con {@code nroOrden} secuencial, respetando {@link #cantidadPreguntasPorBloque}
+     * como máximo por bloque y distribuyendo el resto de forma equilibrada entre los bloques
+     * (la diferencia entre cualquier par de bloques es a lo sumo 1).
      *
      * @param preguntas lista ordenada/mezclada de preguntas seleccionadas para el cuestionario
      * @throws IllegalStateException si {@code cantidadPreguntasPorBloque} no es mayor a 0
@@ -116,13 +118,18 @@ public class Cuestionario extends EntidadAuditable {
             return;
         }
 
-        int nroBloque = 1;
+        int total = preguntas.size();
+        int cantBloques = (total + cantidadPreguntasPorBloque - 1) / cantidadPreguntasPorBloque;
+        int basePorBloque = total / cantBloques;
+        int bloquesConExtra = total % cantBloques;
+
+        int indice = 0;
         int nroOrden = 1;
-        for (int i = 0; i < preguntas.size(); i += cantidadPreguntasPorBloque) {
-            int fin = Math.min(i + cantidadPreguntasPorBloque, preguntas.size());
-            BloqueCuestionario bloque = new BloqueCuestionario(nroBloque++);
-            for (int j = i; j < fin; j++) {
-                bloque.addPreguntaAsignada(new PreguntaAsignada(preguntas.get(j), nroOrden++));
+        for (int b = 0; b < cantBloques; b++) {
+            int tamanioBloque = basePorBloque + (b < bloquesConExtra ? 1 : 0);
+            BloqueCuestionario bloque = new BloqueCuestionario(b + 1);
+            for (int j = 0; j < tamanioBloque; j++) {
+                bloque.addPreguntaAsignada(new PreguntaAsignada(preguntas.get(indice++), nroOrden++));
             }
             addBloque(bloque);
         }

@@ -112,7 +112,7 @@ class EvaluacionIntegrationTest {
         assertThat(persistida.getCuestionarios()).hasSize(2);
         for (Cuestionario q : persistida.getCuestionarios()) {
             assertThat(q.getEstado()).isEqualTo(EstadoCuestionario.ACTIVO);
-            // Puesto 1 tiene 3 factores válidos (FAC-01, FAC-02, FAC-04) => 6 preguntas => 2 bloques (5 y 1)
+            // Puesto 1 tiene 3 factores válidos (FAC-01, FAC-02, FAC-04) => 6 preguntas => 2 bloques equilibrados (3 y 3)
             assertThat(q.getBloques()).hasSize(2);
             assertThat(q.getTotalPreguntasAsignadas()).isEqualTo(6);
         }

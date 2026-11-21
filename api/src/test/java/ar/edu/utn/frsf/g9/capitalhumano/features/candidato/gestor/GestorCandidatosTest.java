@@ -281,8 +281,8 @@ class GestorCandidatosTest {
             assertThat(q.getTiempoMaximoMinutos()).isEqualTo(60);
             assertThat(q.getCantidadPreguntasPorBloque()).isEqualTo(5);
             assertThat(q.getBloques()).hasSize(2);
-            assertThat(q.getBloques().get(0).getPreguntasAsignadas()).hasSize(5);
-            assertThat(q.getBloques().get(1).getPreguntasAsignadas()).hasSize(1);
+            assertThat(q.getBloques().get(0).getPreguntasAsignadas()).hasSize(3);
+            assertThat(q.getBloques().get(1).getPreguntasAsignadas()).hasSize(3);
             assertThat(q.getTotalPreguntasAsignadas()).isEqualTo(6);
             assertThat(generadorClaveAcceso.esValida(q.getClaveAcceso())).isTrue();
         }

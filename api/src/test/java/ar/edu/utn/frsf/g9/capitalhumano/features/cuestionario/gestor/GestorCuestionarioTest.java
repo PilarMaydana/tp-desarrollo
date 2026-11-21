@@ -131,7 +131,7 @@ class GestorCuestionarioTest {
     }
 
     @Test
-    @DisplayName("Cuestionario.armarBloques divide preguntas respetando cantidadPreguntasPorBloque con numeración secuencial")
+    @DisplayName("Cuestionario.armarBloques distribuye preguntas de forma equilibrada sin superar cantidadPreguntasPorBloque")
     void cuestionario_armarBloques() {
         Competencia comp = new Competencia(1L, "COM-01", "COMUNICACIÓN", "DESC");
         Factor factor = new Factor(1L, "FAC-01", "ORAL", "DESC", 1, comp);
@@ -153,9 +153,10 @@ class GestorCuestionarioTest {
         assertThat(cuestionario.getBloques())
                 .extracting(BloqueCuestionario::getNroBloque)
                 .containsExactly(1, 2, 3);
+        // 7 preguntas con máximo 3 por bloque => 3 bloques equilibrados: 3, 2, 2
         assertThat(cuestionario.getBloques().get(0).getPreguntasAsignadas()).hasSize(3);
-        assertThat(cuestionario.getBloques().get(1).getPreguntasAsignadas()).hasSize(3);
-        assertThat(cuestionario.getBloques().get(2).getPreguntasAsignadas()).hasSize(1);
+        assertThat(cuestionario.getBloques().get(1).getPreguntasAsignadas()).hasSize(2);
+        assertThat(cuestionario.getBloques().get(2).getPreguntasAsignadas()).hasSize(2);
 
         List<Integer> ordenes = cuestionario.getBloques().stream()
                 .flatMap(b -> b.getPreguntasAsignadas().stream())
@@ -163,6 +164,30 @@ class GestorCuestionarioTest {
                 .toList();
         assertThat(ordenes).containsExactly(1, 2, 3, 4, 5, 6, 7);
         assertThat(cuestionario.getTotalPreguntasAsignadas()).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("Cuestionario.armarBloques reparte 6 preguntas con máximo 5 en 2 bloques equilibrados de 3 y 3")
+    void cuestionario_armarBloques_equilibradoSinSobrasUnitarias() {
+        Competencia comp = new Competencia(1L, "COM-01", "COMUNICACIÓN", "DESC");
+        Factor factor = new Factor(1L, "FAC-01", "ORAL", "DESC", 1, comp);
+        List<Pregunta> preguntas = List.of(
+                new Pregunta(1L, "P1", "E1", "D1", factor),
+                new Pregunta(2L, "P2", "E2", "D2", factor),
+                new Pregunta(3L, "P3", "E3", "D3", factor),
+                new Pregunta(4L, "P4", "E4", "D4", factor),
+                new Pregunta(5L, "P5", "E5", "D5", factor),
+                new Pregunta(6L, "P6", "E6", "D6", factor)
+        );
+
+        Cuestionario cuestionario = new Cuestionario();
+        cuestionario.setCantidadPreguntasPorBloque(5);
+        cuestionario.armarBloques(preguntas);
+
+        assertThat(cuestionario.getBloques()).hasSize(2);
+        assertThat(cuestionario.getBloques().get(0).getPreguntasAsignadas()).hasSize(3);
+        assertThat(cuestionario.getBloques().get(1).getPreguntasAsignadas()).hasSize(3);
+        assertThat(cuestionario.getTotalPreguntasAsignadas()).isEqualTo(6);
     }
 
     @Test
@@ -348,9 +373,9 @@ class GestorCuestionarioTest {
 
         assertThat(resultado.estado()).isEqualTo(EstadoCuestionario.EN_PROCESO);
         assertThat(resultado.fechaInicio()).isEqualTo(AHORA);
-        assertThat(resultado.totalBloques()).isEqualTo(2); // 4 preguntas (2 de fValido1 + 2 de fValido2) en bloques de 3 -> 3 + 1
+        assertThat(resultado.totalBloques()).isEqualTo(2); // 4 preguntas (2 de fValido1 + 2 de fValido2) con máx 3 -> 2 + 2
         assertThat(resultado.bloqueActual().numero()).isEqualTo(1);
-        assertThat(resultado.bloqueActual().preguntas()).hasSize(3);
+        assertThat(resultado.bloqueActual().preguntas()).hasSize(2);
 
         List<Pregunta> todasAsignadas = cuestionario.getBloques().stream()
                 .flatMap(b -> b.getPreguntasAsignadas().stream())
