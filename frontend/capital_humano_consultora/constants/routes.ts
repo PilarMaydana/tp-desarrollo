@@ -29,5 +29,6 @@ export const ROUTES = {
   },
   CANDIDATO: {
     CUESTIONARIO: '/candidato/cuestionario',
+    CUESTIONARIO_COMPLETAR: (id: number | string) => `/cuestionario/${id}`,
   },
 } as const;
