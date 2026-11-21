@@ -11,5 +11,12 @@ public interface ContextoSeguridad {
      * @return ID numérico del usuario actual
      */
     Long getUsuarioActualId();
+
+    /**
+     * Obtiene el identificador del candidato actualmente autenticado en el sistema.
+     *
+     * @return ID numérico del candidato actual
+     */
+    Long obtenerCandidatoActual();
 }
 

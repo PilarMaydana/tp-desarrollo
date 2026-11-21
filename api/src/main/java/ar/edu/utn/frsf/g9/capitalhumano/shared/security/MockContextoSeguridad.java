@@ -15,5 +15,11 @@ public class MockContextoSeguridad implements ContextoSeguridad {
     public Long getUsuarioActualId() {
         return 1L;
     }
+
+    @Override
+    public Long obtenerCandidatoActual() {
+        // TODO CU 01: obtener el ID del candidato desde el principal autenticado
+        return 1L;
+    }
 }
 

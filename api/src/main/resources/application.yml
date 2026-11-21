@@ -41,3 +41,12 @@ capitalhumano:
   evaluacion:
     tiempo-maximo-minutos: 60
     cantidad-preguntas-por-bloque: 5
+  cuestionario:
+    instrucciones: >-
+      Lea atentamente cada pregunta y seleccione la opción que mejor refleje su criterio.
+      El cuestionario está organizado en bloques; deberá responder todas las preguntas de cada
+      bloque para poder avanzar al siguiente. Una vez iniciado, dispondrá del tiempo máximo
+      indicado para completarlo.
+    max-accesos: 3
+    max-horas-en-estado-activo: 72
+
