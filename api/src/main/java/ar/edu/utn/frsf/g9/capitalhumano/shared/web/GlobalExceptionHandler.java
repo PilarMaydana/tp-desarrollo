@@ -6,6 +6,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.importar_candidatos.exception.C
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ValidacionException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +85,24 @@ public class GlobalExceptionHandler {
                 detalles
         );
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(ValidacionException.class)
+    public ResponseEntity<ApiError> handleValidacion(
+            ValidacionException ex, HttpServletRequest request) {
+        List<ApiError.CampoError> detalles = ex.getDetalles().stream()
+                .map(detalle -> new ApiError.CampoError(detalle.campo(), detalle.mensaje()))
+                .toList();
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getCodigo(),
+                ex.getMessage(),
+                request.getRequestURI(),
+                detalles
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

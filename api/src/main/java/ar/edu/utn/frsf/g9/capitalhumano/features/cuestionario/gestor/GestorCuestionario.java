@@ -4,16 +4,21 @@ import ar.edu.utn.frsf.g9.capitalhumano.config.CuestionarioProperties;
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.Candidato;
 import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.model.Competencia;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao.CuestionarioDAO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao.ResultadoDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.BloqueCuestionarioDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.CuestionarioIniciadoDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.InstruccionesCuestionarioDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.OpcionPreguntaCandidatoDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.PreguntaAsignadaDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.ResponderBloqueRequestDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.ResponderBloqueResponseDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.RespuestaItemDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.BloqueCuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.Cuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.EstadoCuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.PreguntaAsignada;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.RespuestaCandidato;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.Resultado;
 import ar.edu.utn.frsf.g9.capitalhumano.features.evaluacion.model.Evaluacion;
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.dao.FactorDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.factor.model.Factor;
@@ -24,6 +29,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.CaracteristicaPues
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.Puesto;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ValidacionException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.security.ContextoSeguridad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +44,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * Gestor de lógica de negocio para {@link Cuestionario}.
@@ -60,6 +70,8 @@ public class GestorCuestionario {
     private final FactorDAO factorDAO;
     private final CuestionarioDAO cuestionarioDAO;
     private final PuestoDAO puestoDAO;
+    private final ResultadoDAO resultadoDAO;
+    private final CalculadorResultadosCuestionario calculadorResultados;
     private final ContextoSeguridad contextoSeguridad;
     private final CuestionarioProperties properties;
     private final Clock clock;
@@ -69,6 +81,8 @@ public class GestorCuestionario {
     public GestorCuestionario(FactorDAO factorDAO,
                               CuestionarioDAO cuestionarioDAO,
                               PuestoDAO puestoDAO,
+                              ResultadoDAO resultadoDAO,
+                              CalculadorResultadosCuestionario calculadorResultados,
                               ContextoSeguridad contextoSeguridad,
                               CuestionarioProperties properties,
                               Clock clock,
@@ -76,10 +90,28 @@ public class GestorCuestionario {
         this.factorDAO = factorDAO;
         this.cuestionarioDAO = cuestionarioDAO;
         this.puestoDAO = puestoDAO;
+        this.resultadoDAO = resultadoDAO;
+        this.calculadorResultados = calculadorResultados != null
+                ? calculadorResultados
+                : new CalculadorResultadosCuestionario();
         this.contextoSeguridad = contextoSeguridad;
         this.properties = properties;
         this.clock = clock;
         this.random = random;
+    }
+
+    /**
+     * Constructor de compatibilidad para pruebas existentes de CU 026 Parte 1.
+     */
+    public GestorCuestionario(FactorDAO factorDAO,
+                              CuestionarioDAO cuestionarioDAO,
+                              PuestoDAO puestoDAO,
+                              ContextoSeguridad contextoSeguridad,
+                              CuestionarioProperties properties,
+                              Clock clock,
+                              Random random) {
+        this(factorDAO, cuestionarioDAO, puestoDAO, null, new CalculadorResultadosCuestionario(),
+                contextoSeguridad, properties, clock, random);
     }
 
     /**
@@ -88,7 +120,8 @@ public class GestorCuestionario {
      * @param factorDAO DAO de factores
      */
     public GestorCuestionario(FactorDAO factorDAO) {
-        this(factorDAO, null, null, null, new CuestionarioProperties(), Clock.systemDefaultZone(), new SecureRandom());
+        this(factorDAO, null, null, null, new CalculadorResultadosCuestionario(),
+                null, new CuestionarioProperties(), Clock.systemDefaultZone(), new SecureRandom());
     }
 
     // =========================================================================
@@ -297,6 +330,194 @@ public class GestorCuestionario {
     }
 
     // =========================================================================
+    // CU 026 (Parte 2): Responder bloques, avance y cálculo de resultados
+    // =========================================================================
+
+    /**
+     * Registra las respuestas del candidato para el bloque actual del cuestionario, valida la
+     * completitud del bloque (Flujo 6.A), avanza al siguiente bloque si corresponde (Flujo 8.A)
+     * o calcula resultados y cierra el cuestionario en estado {@link EstadoCuestionario#COMPLETO}
+     * si era el último bloque (CU 026 - Pasos 5 a 8).
+     *
+     * <p>La transacción aplica {@code noRollbackFor = ReglaNegocioException.class} para que la
+     * transición a {@code INCOMPLETO} por tiempo agotado (Flujo 1.A) quede persistida; las demás
+     * validaciones no mutan entidades antes de lanzar excepciones, garantizando atomicidad en el
+     * guardado del bloque y el cierre.</p>
+     *
+     * @param cuestionarioId identificador del cuestionario
+     * @param numeroBloque   número secuencial del bloque a responder (1..N)
+     * @param request        respuestas enviadas por el candidato
+     * @return DTO indicando avance al siguiente bloque o finalización exitosa (sin puntajes)
+     * @throws RecursoNoEncontradoException si el cuestionario no existe/es ajeno o el bloque no existe
+     * @throws ReglaNegocioException        si venció el tiempo, no está EN_PROCESO, el bloque no es el actual
+     *                                      o ya fue respondido, o pregunta/opción no corresponde
+     * @throws ValidacionException          si faltan preguntas por responder en el bloque (Flujo 6.A -> 400)
+     */
+    @Transactional(noRollbackFor = ReglaNegocioException.class)
+    public ResponderBloqueResponseDTO responderBloque(Long cuestionarioId,
+                                                      Integer numeroBloque,
+                                                      ResponderBloqueRequestDTO request) {
+        Cuestionario cuestionario = obtenerCuestionarioDelCandidatoActual(cuestionarioId);
+        LocalDateTime ahora = LocalDateTime.now(clock);
+
+        // 1. Validación de disponibilidad (reutiliza Parte 1, sin incrementar ni validar accesos)
+        validarDisponibilidad(cuestionario, false, ahora);
+
+        // 2. El cuestionario debe estar EN_PROCESO
+        if (cuestionario.getEstado() != EstadoCuestionario.EN_PROCESO) {
+            throw new ReglaNegocioException(
+                    "El cuestionario debe encontrarse en estado EN_PROCESO para responder bloques (estado actual: "
+                            + cuestionario.getEstado() + ")."
+            );
+        }
+
+        // 3. El bloque debe existir (404) y ser el bloque actual (primero no completado -> 422 si ya completado o no es actual)
+        List<BloqueCuestionario> bloquesOrdenados = cuestionario.getBloques().stream()
+                .sorted(Comparator.comparing(BloqueCuestionario::getNroBloque, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+
+        BloqueCuestionario bloqueSolicitado = bloquesOrdenados.stream()
+                .filter(b -> Objects.equals(b.getNroBloque(), numeroBloque))
+                .findFirst()
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "El bloque " + numeroBloque + " del cuestionario " + cuestionarioId + " no existe."
+                ));
+
+        if (Boolean.TRUE.equals(bloqueSolicitado.getRespondido())) {
+            throw new ReglaNegocioException(
+                    "El bloque " + numeroBloque + " ya fue respondido anteriormente."
+            );
+        }
+
+        BloqueCuestionario bloqueActual = bloquesOrdenados.stream()
+                .filter(b -> !Boolean.TRUE.equals(b.getRespondido()))
+                .findFirst()
+                .orElseThrow(() -> new ReglaNegocioException(
+                        "El cuestionario no posee bloques pendientes de responder."
+                ));
+
+        if (!Objects.equals(bloqueActual.getNroBloque(), numeroBloque)) {
+            throw new ReglaNegocioException(
+                    "El bloque " + numeroBloque + " no es el bloque actual pendiente de responder (bloque actual: "
+                            + bloqueActual.getNroBloque() + ")."
+            );
+        }
+
+        // 4. Validar pertenencia de preguntaAsignadaId al bloque y de opcionId a la pregunta
+        List<PreguntaAsignada> preguntasDelBloque = bloqueSolicitado.getPreguntasAsignadas().stream()
+                .sorted(Comparator.comparing(PreguntaAsignada::getNroOrden, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+
+        Map<Long, PreguntaAsignada> preguntasPorId = new LinkedHashMap<>();
+        for (PreguntaAsignada pa : preguntasDelBloque) {
+            preguntasPorId.put(pa.getId(), pa);
+        }
+
+        List<RespuestaItemDTO> itemsEnviados = (request != null && request.respuestas() != null)
+                ? request.respuestas()
+                : List.of();
+
+        Set<Long> preguntasProcesadas = new HashSet<>();
+        Map<Long, OpcionRespuesta> opcionesElegidasPorPreguntaId = new LinkedHashMap<>();
+
+        for (RespuestaItemDTO item : itemsEnviados) {
+            if (item == null || item.preguntaAsignadaId() == null) {
+                throw new ReglaNegocioException("Cada respuesta debe indicar una preguntaAsignadaId válida.");
+            }
+            Long preguntaAsignadaId = item.preguntaAsignadaId();
+            if (!preguntasProcesadas.add(preguntaAsignadaId)) {
+                throw new ReglaNegocioException(
+                        "La pregunta asignada " + preguntaAsignadaId + " fue enviada más de una vez."
+                );
+            }
+
+            PreguntaAsignada preguntaAsignada = preguntasPorId.get(preguntaAsignadaId);
+            if (preguntaAsignada == null) {
+                throw new ReglaNegocioException(
+                        "La pregunta asignada " + preguntaAsignadaId + " no pertenece al bloque " + numeroBloque + "."
+                );
+            }
+
+            if (item.opcionId() != null) {
+                OpcionRespuesta opcionElegida = buscarOpcionDePregunta(preguntaAsignada, item.opcionId())
+                        .orElseThrow(() -> new ReglaNegocioException(
+                                "La opción de respuesta " + item.opcionId()
+                                        + " no pertenece a la pregunta asignada " + preguntaAsignadaId + "."
+                        ));
+                opcionesElegidasPorPreguntaId.put(preguntaAsignadaId, opcionElegida);
+            }
+        }
+
+        // 5. Flujo 6.A: verificar que todas las preguntas del bloque hayan sido respondidas
+        List<ValidacionException.DetalleError> faltantes = new ArrayList<>();
+        for (PreguntaAsignada pa : preguntasDelBloque) {
+            if (!opcionesElegidasPorPreguntaId.containsKey(pa.getId())) {
+                faltantes.add(new ValidacionException.DetalleError(
+                        String.valueOf(pa.getId()),
+                        "Debe responder la pregunta N.° " + pa.getNroOrden()
+                                + " (preguntaAsignadaId: " + pa.getId() + ")."
+                ));
+            }
+        }
+
+        if (!faltantes.isEmpty()) {
+            throw new ValidacionException(
+                    "Debe responder todas las preguntas del bloque antes de continuar.",
+                    faltantes
+            );
+        }
+
+        // 6. Paso 7: guardar respuestas del bloque y marcar bloque como completado
+        for (PreguntaAsignada pa : preguntasDelBloque) {
+            OpcionRespuesta opcionElegida = opcionesElegidasPorPreguntaId.get(pa.getId());
+            if (pa.getRespuestaCandidato() != null) {
+                pa.getRespuestaCandidato().setOpcionElegida(opcionElegida);
+                pa.getRespuestaCandidato().setFechaRespuesta(ahora);
+            } else {
+                pa.setRespuestaCandidato(new RespuestaCandidato(pa, opcionElegida, ahora));
+            }
+        }
+        bloqueSolicitado.setRespondido(Boolean.TRUE);
+        bloqueSolicitado.setFechaRespuesta(ahora);
+        cuestionario.setUltimoBloqueRespondido(bloqueSolicitado.getNroBloque());
+
+        // 7. Verificar si quedan más bloques (Flujo 8.A) o es el último bloque (Paso 8)
+        Optional<BloqueCuestionario> bloqueSiguienteOpt = bloquesOrdenados.stream()
+                .filter(b -> !Boolean.TRUE.equals(b.getRespondido()))
+                .findFirst();
+
+        if (bloqueSiguienteOpt.isPresent()) {
+            int tiempoMaximoMinutos = resolverTiempoMaximoMinutos(cuestionario);
+            long segundosRestantes = calcularSegundosRestantes(cuestionario.getFechaInicio(), tiempoMaximoMinutos, ahora);
+            cuestionario.setTiempoRestanteSegundos((int) segundosRestantes);
+            cuestionarioDAO.save(cuestionario);
+
+            BloqueCuestionario siguiente = bloqueSiguienteOpt.get();
+            log.info("Bloque {} del cuestionario ID {} guardado; avanza al bloque {}",
+                    numeroBloque, cuestionario.getId(), siguiente.getNroBloque());
+            return ResponderBloqueResponseDTO.siguienteBloque(aBloqueDTO(siguiente), segundosRestantes);
+        }
+
+        // Paso 8: último bloque -> calcular y guardar resultados, cerrar cuestionario en estado COMPLETO
+        Puesto puestoConCaracteristicas = resolverPuestoConCaracteristicas(cuestionario);
+        Resultado resultado = calculadorResultados.calcular(cuestionario, puestoConCaracteristicas, ahora);
+
+        cuestionario.setEstado(EstadoCuestionario.COMPLETO);
+        cuestionario.setFechaFinalizacion(ahora);
+        cuestionario.setFechaCambioEstado(ahora);
+        cuestionario.setTiempoRestanteSegundos(0);
+
+        cuestionarioDAO.save(cuestionario);
+        if (resultadoDAO != null) {
+            resultadoDAO.save(resultado);
+        }
+
+        log.info("Cuestionario ID {} completado con éxito por candidato ID {}; resultado persistido.",
+                cuestionario.getId(), contextoSeguridad.obtenerCandidatoActual());
+        return ResponderBloqueResponseDTO.cuestionarioCompletado();
+    }
+
+    // =========================================================================
     // CU 025: Validación de competencias, sorteo de preguntas y armado
     // =========================================================================
 
@@ -479,6 +700,27 @@ public class GestorCuestionario {
             return cuestionario.getPuesto();
         }
         return cuestionario.getEvaluacion() != null ? cuestionario.getEvaluacion().getPuesto() : null;
+    }
+
+    private Puesto resolverPuestoConCaracteristicas(Cuestionario cuestionario) {
+        Puesto puesto = resolverPuesto(cuestionario);
+        if (puesto == null || puesto.getId() == null) {
+            return puesto;
+        }
+        if ((puesto.getCaracteristicas() == null || puesto.getCaracteristicas().isEmpty()) && puestoDAO != null) {
+            return puestoDAO.findByIdActivaConCaracteristicas(puesto.getId()).orElse(puesto);
+        }
+        return puesto;
+    }
+
+    private Optional<OpcionRespuesta> buscarOpcionDePregunta(PreguntaAsignada preguntaAsignada, Long opcionId) {
+        Pregunta pregunta = preguntaAsignada.getPregunta();
+        if (pregunta == null || pregunta.getOpciones() == null) {
+            return Optional.empty();
+        }
+        return pregunta.getOpciones().stream()
+                .filter(op -> Objects.equals(op.getId(), opcionId))
+                .findFirst();
     }
 
     private int resolverTiempoMaximoMinutos(Cuestionario cuestionario) {
