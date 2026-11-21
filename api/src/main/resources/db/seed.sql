@@ -139,6 +139,7 @@ INSERT INTO cuestionario (candidato_id, puesto_id, evaluacion_id, estado, clave_
 --   ID 10 -> (e) ACTIVO con cantidad_accesos = maxAccesos (3 -> límite de accesos)
 --   ID 11 -> (f) COMPLETO (estado final no disponible)
 --   ID 2  -> (g) Cuestionario de candidato 2 (ajeno -> 404)
+--   ID 12 -> (h) EN_PROCESO vigente con UN solo bloque pendiente (6 preguntas: 2 por factor válido) para probar cierre y cálculo
 -- ============================================================================
 INSERT INTO cuestionario (candidato_id, puesto_id, evaluacion_id, estado, clave_acceso, fecha_creacion, fecha_cambio_estado, fecha_inicio, fecha_finalizacion, cantidad_accesos, tiempo_maximo_minutos, cantidad_preguntas_por_bloque, tiempo_restante_segundos, ultimo_bloque_respondido, eliminado) VALUES
     (1, 3, 2, 'ACTIVO', 'CU26ACT1', DATEADD('HOUR', -2, CURRENT_TIMESTAMP), DATEADD('HOUR', -2, CURRENT_TIMESTAMP), NULL, NULL, 0, 60, 3, 3600, NULL, FALSE),
@@ -146,14 +147,16 @@ INSERT INTO cuestionario (candidato_id, puesto_id, evaluacion_id, estado, clave_
     (1, 3, 2, 'ACTIVO', 'CU26VEN1', DATEADD('HOUR', -80, CURRENT_TIMESTAMP), DATEADD('HOUR', -80, CURRENT_TIMESTAMP), NULL, NULL, 0, 60, 3, 3600, NULL, FALSE),
     (1, 3, 2, 'EN_PROCESO', 'CU26VPR1', DATEADD('HOUR', -5, CURRENT_TIMESTAMP), DATEADD('MINUTE', -90, CURRENT_TIMESTAMP), DATEADD('MINUTE', -90, CURRENT_TIMESTAMP), NULL, 1, 60, 3, 0, NULL, FALSE),
     (1, 3, 2, 'ACTIVO', 'CU26ACC1', DATEADD('HOUR', -1, CURRENT_TIMESTAMP), DATEADD('HOUR', -1, CURRENT_TIMESTAMP), NULL, NULL, 3, 60, 3, 3600, NULL, FALSE),
-    (1, 3, 2, 'COMPLETO', 'CU26CMP1', DATEADD('HOUR', -10, CURRENT_TIMESTAMP), DATEADD('HOUR', -8, CURRENT_TIMESTAMP), DATEADD('HOUR', -9, CURRENT_TIMESTAMP), DATEADD('HOUR', -8, CURRENT_TIMESTAMP), 1, 60, 3, 0, 2, FALSE);
+    (1, 3, 2, 'COMPLETO', 'CU26CMP1', DATEADD('HOUR', -10, CURRENT_TIMESTAMP), DATEADD('HOUR', -8, CURRENT_TIMESTAMP), DATEADD('HOUR', -9, CURRENT_TIMESTAMP), DATEADD('HOUR', -8, CURRENT_TIMESTAMP), 1, 60, 3, 0, 2, FALSE),
+    (1, 3, 2, 'EN_PROCESO', 'CU26CIE1', DATEADD('HOUR', -1, CURRENT_TIMESTAMP), DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), NULL, 1, 60, 6, 3000, NULL, FALSE);
 
--- Bloques pregenerados (como los crea CU 025) para los cuestionarios de prueba ID 6 (ACTIVO) e ID 7 (EN_PROCESO)
+-- Bloques pregenerados (como los crea CU 025) para los cuestionarios de prueba ID 6 (ACTIVO), ID 7 (EN_PROCESO) e ID 12 (EN_PROCESO con 1 bloque)
 INSERT INTO bloque_cuestionario (cuestionario_id, nro_bloque, respondido, fecha_respuesta) VALUES
     (6, 1, FALSE, NULL),
     (6, 2, FALSE, NULL),
     (7, 1, TRUE, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP)),
-    (7, 2, FALSE, NULL);
+    (7, 2, FALSE, NULL),
+    (12, 1, FALSE, NULL);
 
 -- Preguntas asignadas (2 por factor válido: FAC-03 -> preg 1,2; FAC-07 -> preg 14,15; FAC-06 -> preg 12,13; excluye FAC-08 -> preg 16)
 INSERT INTO pregunta_asignada (bloque_cuestionario_id, pregunta_id, nro_orden) VALUES
@@ -170,7 +173,15 @@ INSERT INTO pregunta_asignada (bloque_cuestionario_id, pregunta_id, nro_orden) V
     (3, 14, 3),
     (4, 2, 4),
     (4, 13, 5),
-    (4, 15, 6);
+    (4, 15, 6),
+    -- Cuestionario ID 12 (h: EN_PROCESO vigente con 1 bloque pendiente, ID 5)
+    -- Preguntas asignadas IDs 13..18: FAC-03 (preg 1,2), FAC-07 (preg 14,15), FAC-06 (preg 12,13)
+    (5, 1, 1),
+    (5, 2, 2),
+    (5, 14, 3),
+    (5, 15, 4),
+    (5, 12, 5),
+    (5, 13, 6);
 
 -- Respuestas ya guardadas para el bloque 1 del cuestionario ID 7 (preguntas asignadas IDs 7, 8, 9)
 INSERT INTO respuesta_candidato (pregunta_asignada_id, opcion_respuesta_id, fecha_respuesta) VALUES
