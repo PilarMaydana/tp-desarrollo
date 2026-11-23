@@ -53,4 +53,21 @@ public interface CuestionarioDAO extends JpaRepository<Cuestionario, Long> {
             @Param("id") Long id,
             @Param("candidatoId") Long candidatoId
     );
+
+    /**
+     * Obtiene todos los cuestionarios no eliminados de las evaluaciones indicadas con su
+     * candidato y evaluación precargados en una sola consulta (evita N+1 en CU 028).
+     *
+     * @param evaluacionIds identificadores de las evaluaciones incluidas en el reporte
+     * @return lista de cuestionarios con candidato y evaluación cargados
+     */
+    @Query("SELECT c FROM Cuestionario c " +
+           "JOIN FETCH c.candidato cand " +
+           "JOIN FETCH c.evaluacion ev " +
+           "WHERE ev.id IN :evaluacionIds " +
+           "AND c.eliminado = false " +
+           "ORDER BY c.id ASC")
+    List<Cuestionario> findByEvaluacionIdInConCandidatoYEvaluacion(
+            @Param("evaluacionIds") Collection<Long> evaluacionIds
+    );
 }

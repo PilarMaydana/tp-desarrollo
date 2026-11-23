@@ -63,5 +63,34 @@ public interface PuestoDAO extends JpaRepository<Puesto, Long> {
            "LEFT JOIN FETCH cp.competencia c " +
            "WHERE p.id = :id AND p.eliminado = false")
     Optional<Puesto> findByIdActivaConCaracteristicas(@Param("id") Long id);
+
+    /**
+     * Verifica si existe un puesto activo (no eliminado) con el ID especificado.
+     *
+     * @param id identificador del puesto
+     * @return {@code true} si existe y está activo
+     */
+    boolean existsByIdAndEliminadoFalse(Long id);
+
+    /**
+     * Busca puestos activos aplicando criterios opcionales "contiene" (case-insensitive)
+     * sobre código, nombre y empresa, ordenados alfabéticamente por nombre (CU 028).
+     *
+     * @param codigo  fragmento normalizado (en mayúsculas) o {@code null}
+     * @param nombre  fragmento normalizado (en mayúsculas) o {@code null}
+     * @param empresa fragmento normalizado (en mayúsculas) o {@code null}
+     * @return lista de puestos coincidentes ordenados por nombre ascendente
+     */
+    @Query("SELECT p FROM Puesto p " +
+           "WHERE p.eliminado = false " +
+           "AND (:codigo IS NULL OR UPPER(p.codigo) LIKE CONCAT('%', :codigo, '%')) " +
+           "AND (:nombre IS NULL OR UPPER(p.nombre) LIKE CONCAT('%', :nombre, '%')) " +
+           "AND (:empresa IS NULL OR UPPER(p.empresa) LIKE CONCAT('%', :empresa, '%')) " +
+           "ORDER BY p.nombre ASC, p.id ASC")
+    List<Puesto> buscarActivosPorCriterios(
+            @Param("codigo") String codigo,
+            @Param("nombre") String nombre,
+            @Param("empresa") String empresa
+    );
 }
 
