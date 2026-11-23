@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS cuestionario (
     fecha_creacion TIMESTAMP,
     fecha_cambio_estado TIMESTAMP,
     fecha_inicio TIMESTAMP,
+    fecha_ultimo_ingreso TIMESTAMP,
     fecha_finalizacion TIMESTAMP,
     cantidad_accesos INT NOT NULL DEFAULT 0,
     tiempo_maximo_minutos INT,
