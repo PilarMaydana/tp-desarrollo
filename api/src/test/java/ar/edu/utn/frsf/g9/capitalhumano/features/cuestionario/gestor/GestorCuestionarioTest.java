@@ -330,6 +330,7 @@ class GestorCuestionarioTest {
 
         assertThat(cuestionario.getEstado()).isEqualTo(EstadoCuestionario.EN_PROCESO);
         assertThat(cuestionario.getFechaInicio()).isEqualTo(AHORA);
+        assertThat(cuestionario.getFechaUltimoIngreso()).isEqualTo(AHORA);
         assertThat(cuestionario.getFechaCambioEstado()).isEqualTo(AHORA);
         assertThat(cuestionario.getCantidadAccesos()).isEqualTo(1);
 
@@ -443,6 +444,8 @@ class GestorCuestionarioTest {
         assertThat(resultado.bloqueActual().preguntas().get(1).respuestaOpcionId()).isNull();
 
         assertThat(cuestionario.getCantidadAccesos()).isEqualTo(2);
+        assertThat(cuestionario.getFechaUltimoIngreso()).isEqualTo(AHORA);
+        assertThat(cuestionario.getFechaInicio()).isEqualTo(inicioOriginal);
         verify(factorDAO, never()).findActivosConPreguntasByCompetenciaIdIn(anyCollection());
         verify(cuestionarioDAO).save(cuestionario);
     }
@@ -825,6 +828,44 @@ class GestorCuestionarioTest {
         assertThat(json).doesNotContainIgnoringCase("puntaje");
         assertThat(json).doesNotContainIgnoringCase("totalFactor");
         assertThat(json).doesNotContainIgnoringCase("totalCompetencia");
+    }
+
+    @Test
+    @DisplayName("CU 026 / CU 028: iniciarCuestionario actualiza fechaUltimoIngreso con Clock en primer ingreso y en reingreso sin alterar fechaInicio")
+    void iniciarCuestionario_actualizaFechaUltimoIngresoConClockEnInicioYReingreso() {
+        Cuestionario cuestionario = crearCuestionarioConDosBloques(30L, EstadoCuestionario.ACTIVO, false);
+        cuestionario.setFechaCreacion(AHORA.minusHours(1));
+        cuestionario.setCantidadAccesos(0);
+        cuestionario.setFechaUltimoIngreso(null);
+
+        when(cuestionarioDAO.findByIdAndCandidatoIdConPuesto(30L, 1L)).thenReturn(Optional.of(cuestionario));
+        when(cuestionarioDAO.saveAndFlush(any(Cuestionario.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(cuestionarioDAO.save(any(Cuestionario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Primer acceso a las 15:00
+        gestorCuestionario.iniciarCuestionario(30L);
+        assertThat(cuestionario.getCantidadAccesos()).isEqualTo(1);
+        assertThat(cuestionario.getFechaInicio()).isEqualTo(AHORA);
+        assertThat(cuestionario.getFechaUltimoIngreso()).isEqualTo(AHORA);
+
+        // Reingreso 20 minutos después con otro Clock fijo
+        LocalDateTime reingreso = AHORA.plusMinutes(20);
+        GestorCuestionario gestorEnReingreso = new GestorCuestionario(
+                factorDAO,
+                cuestionarioDAO,
+                puestoDAO,
+                resultadoDAO,
+                new CalculadorResultadosCuestionario(),
+                contextoSeguridad,
+                properties,
+                Clock.fixed(reingreso.atZone(ZONA).toInstant(), ZONA),
+                new Random(42L)
+        );
+
+        gestorEnReingreso.iniciarCuestionario(30L);
+        assertThat(cuestionario.getCantidadAccesos()).isEqualTo(2);
+        assertThat(cuestionario.getFechaInicio()).isEqualTo(AHORA);
+        assertThat(cuestionario.getFechaUltimoIngreso()).isEqualTo(reingreso);
     }
 
     // =========================================================================

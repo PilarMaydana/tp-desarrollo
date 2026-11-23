@@ -191,6 +191,7 @@ public class GestorCuestionario {
             }
             cuestionario.setCantidadAccesos(accesosActuales + 1);
             cuestionario.setFechaInicio(ahora);
+            cuestionario.setFechaUltimoIngreso(ahora);
             cuestionario.setFechaCambioEstado(ahora);
             cuestionario.setEstado(EstadoCuestionario.EN_PROCESO);
             cuestionario.setTiempoRestanteSegundos(tiempoMaximoMinutos * 60);
@@ -204,6 +205,7 @@ public class GestorCuestionario {
         } else {
             // Reingreso en estado EN_PROCESO (Flujo 1.C): NO regenera bloques ni modifica fechaInicio
             cuestionario.setCantidadAccesos(accesosActuales + 1);
+            cuestionario.setFechaUltimoIngreso(ahora);
             long segundosRestantes = calcularSegundosRestantes(cuestionario.getFechaInicio(), tiempoMaximoMinutos, ahora);
             cuestionario.setTiempoRestanteSegundos((int) segundosRestantes);
 
@@ -639,6 +641,7 @@ public class GestorCuestionario {
         cuestionario.setFechaCreacion(ahora);
         cuestionario.setFechaCambioEstado(ahora);
         cuestionario.setFechaInicio(null);
+        cuestionario.setFechaUltimoIngreso(null);
         cuestionario.setFechaFinalizacion(null);
         cuestionario.setTiempoMaximoMinutos(evaluacion.getTiempoMaximoMinutos());
         cuestionario.setCantidadPreguntasPorBloque(evaluacion.getCantidadPreguntasPorBloque());

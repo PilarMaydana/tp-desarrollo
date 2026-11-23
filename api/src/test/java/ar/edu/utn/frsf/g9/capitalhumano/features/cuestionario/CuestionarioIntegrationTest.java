@@ -63,6 +63,7 @@ class CuestionarioIntegrationTest {
         Cuestionario original = cuestionarioDAO.findById(6L).orElseThrow();
         EstadoCuestionario estadoOrig = original.getEstado();
         LocalDateTime fechaInicioOrig = original.getFechaInicio();
+        LocalDateTime fechaUltimoIngresoOrig = original.getFechaUltimoIngreso();
         LocalDateTime fechaCambioOrig = original.getFechaCambioEstado();
         Integer accesosOrig = original.getCantidadAccesos();
         Integer restanteOrig = original.getTiempoRestanteSegundos();
@@ -88,8 +89,9 @@ class CuestionarioIntegrationTest {
             assertThat(persistido.getEstado()).isEqualTo(EstadoCuestionario.EN_PROCESO);
             assertThat(persistido.getCantidadAccesos()).isEqualTo(1);
             assertThat(persistido.getFechaInicio()).isNotNull();
+            assertThat(persistido.getFechaUltimoIngreso()).isEqualTo(persistido.getFechaInicio());
         } finally {
-            restaurar(6L, estadoOrig, fechaInicioOrig, fechaCambioOrig, accesosOrig, restanteOrig);
+            restaurar(6L, estadoOrig, fechaInicioOrig, fechaUltimoIngresoOrig, fechaCambioOrig, accesosOrig, restanteOrig);
         }
     }
 
@@ -99,6 +101,7 @@ class CuestionarioIntegrationTest {
         Cuestionario original = cuestionarioDAO.findById(7L).orElseThrow();
         EstadoCuestionario estadoOrig = original.getEstado();
         LocalDateTime fechaInicioOrig = original.getFechaInicio();
+        LocalDateTime fechaUltimoIngresoOrig = original.getFechaUltimoIngreso();
         LocalDateTime fechaCambioOrig = original.getFechaCambioEstado();
         Integer accesosOrig = original.getCantidadAccesos();
         Integer restanteOrig = original.getTiempoRestanteSegundos();
@@ -117,8 +120,9 @@ class CuestionarioIntegrationTest {
             Cuestionario persistido = cuestionarioDAO.findById(7L).orElseThrow();
             assertThat(persistido.getCantidadAccesos()).isEqualTo(2);
             assertThat(persistido.getFechaInicio()).isEqualTo(fechaInicioOrig);
+            assertThat(persistido.getFechaUltimoIngreso()).isAfter(fechaUltimoIngresoOrig);
         } finally {
-            restaurar(7L, estadoOrig, fechaInicioOrig, fechaCambioOrig, accesosOrig, restanteOrig);
+            restaurar(7L, estadoOrig, fechaInicioOrig, fechaUltimoIngresoOrig, fechaCambioOrig, accesosOrig, restanteOrig);
         }
     }
 
@@ -209,6 +213,7 @@ class CuestionarioIntegrationTest {
         Cuestionario original = cuestionarioDAO.findById(6L).orElseThrow();
         EstadoCuestionario estadoOrig = original.getEstado();
         LocalDateTime fechaInicioOrig = original.getFechaInicio();
+        LocalDateTime fechaUltimoIngresoOrig = original.getFechaUltimoIngreso();
         LocalDateTime fechaFinOrig = original.getFechaFinalizacion();
         LocalDateTime fechaCambioOrig = original.getFechaCambioEstado();
         Integer accesosOrig = original.getCantidadAccesos();
@@ -296,7 +301,7 @@ class CuestionarioIntegrationTest {
                         .isEqualByComparingTo(new BigDecimal("5.00"));
             });
         } finally {
-            restaurarConBloquesYResultado(6L, estadoOrig, fechaInicioOrig, fechaFinOrig,
+            restaurarConBloquesYResultado(6L, estadoOrig, fechaInicioOrig, fechaUltimoIngresoOrig, fechaFinOrig,
                     fechaCambioOrig, accesosOrig, restanteOrig, ultimoBloqueOrig);
         }
     }
@@ -307,6 +312,7 @@ class CuestionarioIntegrationTest {
         Cuestionario original = cuestionarioDAO.findById(12L).orElseThrow();
         EstadoCuestionario estadoOrig = original.getEstado();
         LocalDateTime fechaInicioOrig = original.getFechaInicio();
+        LocalDateTime fechaUltimoIngresoOrig = original.getFechaUltimoIngreso();
         LocalDateTime fechaFinOrig = original.getFechaFinalizacion();
         LocalDateTime fechaCambioOrig = original.getFechaCambioEstado();
         Integer accesosOrig = original.getCantidadAccesos();
@@ -336,7 +342,7 @@ class CuestionarioIntegrationTest {
                 assertThat(res.getResultadosCompetencias()).hasSize(2);
             });
         } finally {
-            restaurarConBloquesYResultado(12L, estadoOrig, fechaInicioOrig, fechaFinOrig,
+            restaurarConBloquesYResultado(12L, estadoOrig, fechaInicioOrig, fechaUltimoIngresoOrig, fechaFinOrig,
                     fechaCambioOrig, accesosOrig, restanteOrig, ultimoBloqueOrig);
         }
     }
@@ -366,6 +372,7 @@ class CuestionarioIntegrationTest {
     private void restaurarConBloquesYResultado(Long id,
                                                EstadoCuestionario estado,
                                                LocalDateTime fechaInicio,
+                                               LocalDateTime fechaUltimoIngreso,
                                                LocalDateTime fechaFinalizacion,
                                                LocalDateTime fechaCambio,
                                                Integer accesos,
@@ -380,6 +387,7 @@ class CuestionarioIntegrationTest {
             Cuestionario c = cuestionarioDAO.findById(id).orElseThrow();
             c.setEstado(estado);
             c.setFechaInicio(fechaInicio);
+            c.setFechaUltimoIngreso(fechaUltimoIngreso);
             c.setFechaFinalizacion(fechaFinalizacion);
             c.setFechaCambioEstado(fechaCambio);
             c.setCantidadAccesos(accesos);
@@ -404,8 +412,20 @@ class CuestionarioIntegrationTest {
                            Integer accesos,
                            Integer restante) {
         Cuestionario c = cuestionarioDAO.findById(id).orElseThrow();
+        restaurar(id, estado, fechaInicio, c.getFechaUltimoIngreso(), fechaCambio, accesos, restante);
+    }
+
+    private void restaurar(Long id,
+                           EstadoCuestionario estado,
+                           LocalDateTime fechaInicio,
+                           LocalDateTime fechaUltimoIngreso,
+                           LocalDateTime fechaCambio,
+                           Integer accesos,
+                           Integer restante) {
+        Cuestionario c = cuestionarioDAO.findById(id).orElseThrow();
         c.setEstado(estado);
         c.setFechaInicio(fechaInicio);
+        c.setFechaUltimoIngreso(fechaUltimoIngreso);
         c.setFechaCambioEstado(fechaCambio);
         c.setCantidadAccesos(accesos);
         c.setTiempoRestanteSegundos(restante);

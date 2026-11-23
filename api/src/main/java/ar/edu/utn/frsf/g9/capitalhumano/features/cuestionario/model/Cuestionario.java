@@ -63,6 +63,9 @@ public class Cuestionario extends EntidadAuditable {
     @Column(name = "fecha_inicio")
     private LocalDateTime fechaInicio;
 
+    @Column(name = "fecha_ultimo_ingreso")
+    private LocalDateTime fechaUltimoIngreso;
+
     @Column(name = "fecha_finalizacion")
     private LocalDateTime fechaFinalizacion;
 
@@ -222,6 +225,14 @@ public class Cuestionario extends EntidadAuditable {
 
     public void setFechaInicio(LocalDateTime fechaInicio) {
         this.fechaInicio = fechaInicio;
+    }
+
+    public LocalDateTime getFechaUltimoIngreso() {
+        return fechaUltimoIngreso;
+    }
+
+    public void setFechaUltimoIngreso(LocalDateTime fechaUltimoIngreso) {
+        this.fechaUltimoIngreso = fechaUltimoIngreso;
     }
 
     public LocalDateTime getFechaFinalizacion() {
