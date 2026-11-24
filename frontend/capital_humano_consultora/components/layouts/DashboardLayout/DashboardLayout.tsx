@@ -71,11 +71,11 @@ function DashboardContent({ children, consultorNombre, className = '' }: Dashboa
   }
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#F6F6F6] overflow-hidden">
+    <div className="h-screen w-full flex flex-col bg-[#F6F6F6] overflow-hidden print:h-auto print:min-h-0 print:bg-white print:overflow-visible">
       {!isCandidato && <Sidebar />}
       <Topbar consultorNombre={consultorNombre} />
       <main
-        className={`flex-1 min-h-0 w-full overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-8 ${className}`}
+        className={`flex-1 min-h-0 w-full overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-8 print:overflow-visible print:p-0 print:m-0 ${className}`}
       >
         {children}
       </main>
