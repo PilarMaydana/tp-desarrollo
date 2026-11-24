@@ -2,5 +2,8 @@ export * from './types';
 export * from './utils/formatters';
 export * from './services/ordenMeritoService';
 export * from './hooks/useBuscarPuestosOrdenMerito';
+export * from './hooks/useModalFocusTrap';
 export * from './components/PuestosOrdenMeritoTable';
+export * from './components/ModalSeleccionarEvaluaciones';
+export * from './components/ModalSinEvaluaciones';
 export * from './components/OrdenMeritoSearchScreen';

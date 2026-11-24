@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { NotchedField } from '@/components/molecules/NotchedField';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -8,9 +9,20 @@ import { Icon } from '@/components/ui/Icon';
 import { ActionToolbar } from '@/components/organisms/ActionToolbar';
 import { AlertaErrores } from '@/features/cu021-alta-pregunta';
 import { useBuscarPuestosOrdenMerito } from '../hooks/useBuscarPuestosOrdenMerito';
-import { toUpperPreservingCaret } from '../utils/formatters';
+import { ordenMeritoService } from '../services/ordenMeritoService';
+import {
+  extractOrdenMeritoError,
+  saveLastOrdenMeritoSearch,
+  toUpperPreservingCaret,
+} from '../utils/formatters';
 import { PuestosOrdenMeritoTable } from './PuestosOrdenMeritoTable';
-import type { PuestoOrdenMeritoDTO } from '../types';
+import { ModalSeleccionarEvaluaciones } from './ModalSeleccionarEvaluaciones';
+import { ModalSinEvaluaciones } from './ModalSinEvaluaciones';
+import type {
+  EvaluacionOrdenMeritoDTO,
+  OrdenMeritoErrorState,
+  PuestoOrdenMeritoDTO,
+} from '../types';
 
 export interface OrdenMeritoSearchScreenProps {
   onCancelar?: () => void;
@@ -19,7 +31,9 @@ export interface OrdenMeritoSearchScreenProps {
 
 export const OrdenMeritoSearchScreen: React.FC<OrdenMeritoSearchScreenProps> = ({
   onCancelar,
+  onEmitirReporte,
 }) => {
+  const router = useRouter();
   const {
     filtros,
     puestos,
@@ -34,10 +48,91 @@ export const OrdenMeritoSearchScreen: React.FC<OrdenMeritoSearchScreenProps> = (
     handleCancelar,
   } = useBuscarPuestosOrdenMerito({ onCancelar });
 
-  const handleSeleccionarPuesto = (puesto: PuestoOrdenMeritoDTO) => {
-    // Etapa 3 conectará la consulta de evaluaciones y el modal de selección (pasos 5 y 6)
-    void puesto;
-  };
+  // Estado de selección de evaluaciones (Pasos 5 y 6 / Flujo 6.A)
+  const [loadingPuestoId, setLoadingPuestoId] = useState<number | null>(null);
+  const [evaluacionesError, setEvaluacionesError] =
+    useState<OrdenMeritoErrorState | null>(null);
+  const [puestoSeleccionado, setPuestoSeleccionado] =
+    useState<PuestoOrdenMeritoDTO | null>(null);
+  const [evaluacionesPuesto, setEvaluacionesPuesto] = useState<
+    EvaluacionOrdenMeritoDTO[]
+  >([]);
+  const [isModalEvaluacionesOpen, setIsModalEvaluacionesOpen] =
+    useState<boolean>(false);
+  const [mensajeSinEvaluaciones, setMensajeSinEvaluaciones] = useState<
+    string | null
+  >(null);
+
+  const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleSeleccionarPuesto = useCallback(
+    async (puesto: PuestoOrdenMeritoDTO, triggerEl: HTMLButtonElement | null) => {
+      triggerButtonRef.current = triggerEl;
+      setLoadingPuestoId(puesto.puestoId);
+      setEvaluacionesError(null);
+      setMensajeSinEvaluaciones(null);
+
+      try {
+        const evaluaciones = await ordenMeritoService.listarEvaluacionesPorPuesto(
+          puesto.puestoId
+        );
+        setPuestoSeleccionado(puesto);
+        setEvaluacionesPuesto(evaluaciones);
+        setIsModalEvaluacionesOpen(true);
+      } catch (err) {
+        const parsed = extractOrdenMeritoError(
+          err,
+          'No fue posible obtener las evaluaciones del puesto.'
+        );
+        if (parsed.status === 422) {
+          // Flujo Alternativo 6.A: mostrar mensaje del backend y quedarse en la grilla
+          setPuestoSeleccionado(puesto);
+          setMensajeSinEvaluaciones(parsed.mensaje);
+        } else {
+          setEvaluacionesError(parsed);
+        }
+      } finally {
+        setLoadingPuestoId(null);
+      }
+    },
+    []
+  );
+
+  const handleCerrarModalEvaluaciones = useCallback(() => {
+    setIsModalEvaluacionesOpen(false);
+  }, []);
+
+  const handleCerrarModalSinEvaluaciones = useCallback(() => {
+    setMensajeSinEvaluaciones(null);
+  }, []);
+
+  const handleEmitirDesdeModal = useCallback(
+    (evaluacionIds?: number[]) => {
+      if (!puestoSeleccionado) return;
+
+      // Persistir criterios actuales para que «Volver» en el reporte restaure la búsqueda
+      const currentSearch = new URLSearchParams();
+      if (filtros.codigo.trim()) currentSearch.set('codigo', filtros.codigo.trim().toUpperCase());
+      if (filtros.nombre.trim()) currentSearch.set('nombre', filtros.nombre.trim().toUpperCase());
+      if (filtros.empresa.trim()) currentSearch.set('empresa', filtros.empresa.trim().toUpperCase());
+      saveLastOrdenMeritoSearch(currentSearch.toString());
+
+      const targetPuestoId = puestoSeleccionado.puestoId;
+      setIsModalEvaluacionesOpen(false);
+
+      if (onEmitirReporte) {
+        onEmitirReporte(targetPuestoId, evaluacionIds);
+        return;
+      }
+
+      const query =
+        evaluacionIds && evaluacionIds.length > 0
+          ? `?evaluacionIds=${evaluacionIds.join(',')}`
+          : '';
+      router.push(`/orden-merito/${targetPuestoId}/reporte${query}`);
+    },
+    [puestoSeleccionado, filtros, onEmitirReporte, router]
+  );
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto pb-12">
@@ -198,8 +293,25 @@ export const OrdenMeritoSearchScreen: React.FC<OrdenMeritoSearchScreenProps> = (
           </div>
         )}
 
+        {/* Error real del backend al consultar evaluaciones (404 / 500 / red) */}
+        {evaluacionesError && (
+          <AlertaErrores
+            titulo={
+              evaluacionesError.status === 404
+                ? 'Puesto no encontrado'
+                : 'Error al consultar evaluaciones'
+            }
+            mensajeGeneral={evaluacionesError.mensaje}
+            errores={evaluacionesError.detalles}
+            onDismiss={() => setEvaluacionesError(null)}
+          />
+        )}
+
         {/* Grilla de Resultados (Paso 4) */}
-        <section aria-label="Resultados de búsqueda de puestos" className="flex flex-col gap-3">
+        <section
+          aria-label="Resultados de búsqueda de puestos"
+          className="flex flex-col gap-3"
+        >
           {hasSearched && !backendError && (
             <>
               <div className="flex items-center gap-2">
@@ -216,6 +328,7 @@ export const OrdenMeritoSearchScreen: React.FC<OrdenMeritoSearchScreenProps> = (
               <PuestosOrdenMeritoTable
                 puestos={puestos}
                 isLoading={isLoading}
+                loadingPuestoId={loadingPuestoId}
                 onEmitirOrdenMerito={handleSeleccionarPuesto}
               />
             </>
@@ -225,6 +338,7 @@ export const OrdenMeritoSearchScreen: React.FC<OrdenMeritoSearchScreenProps> = (
             <PuestosOrdenMeritoTable
               puestos={[]}
               isLoading={true}
+              loadingPuestoId={null}
               onEmitirOrdenMerito={handleSeleccionarPuesto}
             />
           )}
@@ -244,12 +358,31 @@ export const OrdenMeritoSearchScreen: React.FC<OrdenMeritoSearchScreenProps> = (
             type="button"
             variant="secondary"
             onClick={handleCancelar}
-            disabled={isLoading}
+            disabled={isLoading || loadingPuestoId !== null}
           >
             Cancelar
           </Button>
         </ActionToolbar>
       </div>
+
+      {/* Modal de selección de evaluaciones (Paso 6) */}
+      <ModalSeleccionarEvaluaciones
+        isOpen={isModalEvaluacionesOpen}
+        puesto={puestoSeleccionado}
+        evaluaciones={evaluacionesPuesto}
+        returnFocusRef={triggerButtonRef}
+        onEmitir={handleEmitirDesdeModal}
+        onCancelar={handleCerrarModalEvaluaciones}
+      />
+
+      {/* Modal informativo cuando el puesto no tiene evaluaciones (Flujo 6.A - 422) */}
+      <ModalSinEvaluaciones
+        isOpen={Boolean(mensajeSinEvaluaciones)}
+        puesto={puestoSeleccionado}
+        mensaje={mensajeSinEvaluaciones}
+        returnFocusRef={triggerButtonRef}
+        onAceptar={handleCerrarModalSinEvaluaciones}
+      />
     </div>
   );
 };
