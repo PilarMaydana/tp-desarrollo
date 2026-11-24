@@ -25,11 +25,16 @@ export function useBuscarPuestosOrdenMerito(
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const initialCodigo = (searchParams.get('codigo') ?? '').toUpperCase();
-  const initialNombre = (searchParams.get('nombre') ?? '').toUpperCase();
-  const initialEmpresa = (searchParams.get('empresa') ?? '').toUpperCase();
+  const initialCodigo = (searchParams.get('codigo') ?? '').trim().toUpperCase();
+  const initialNombre = (searchParams.get('nombre') ?? '').trim().toUpperCase();
+  const initialEmpresa = (searchParams.get('empresa') ?? '').trim().toUpperCase();
+  const hasInitialParams = Boolean(
+    initialCodigo || initialNombre || initialEmpresa
+  );
 
-  const [filtros, setFiltros] = useState<Required<FiltrosBusquedaPuestosOrdenMerito>>({
+  const [filtros, setFiltros] = useState<
+    Required<FiltrosBusquedaPuestosOrdenMerito>
+  >({
     codigo: initialCodigo,
     nombre: initialNombre,
     empresa: initialEmpresa,
@@ -37,9 +42,12 @@ export function useBuscarPuestosOrdenMerito(
 
   const [puestos, setPuestos] = useState<PuestoOrdenMeritoDTO[]>([]);
   const [hasSearched, setHasSearched] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [localValidationError, setLocalValidationError] = useState<string | null>(null);
-  const [backendError, setBackendError] = useState<OrdenMeritoErrorState | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(hasInitialParams);
+  const [localValidationError, setLocalValidationError] = useState<
+    string | null
+  >(null);
+  const [backendError, setBackendError] =
+    useState<OrdenMeritoErrorState | null>(null);
 
   const ejecutarBusqueda = useCallback(
     async (criterios: FiltrosBusquedaPuestosOrdenMerito) => {
@@ -147,25 +155,45 @@ export function useBuscarPuestosOrdenMerito(
   // Ejecuta la búsqueda automáticamente al cargar si hay algún criterio en la URL
   const initialSearchDoneRef = useRef(false);
   useEffect(() => {
-    if (initialSearchDoneRef.current) return;
+    if (initialSearchDoneRef.current || !hasInitialParams) return;
+    initialSearchDoneRef.current = true;
 
-    const codigo = initialCodigo.trim();
-    const nombre = initialNombre.trim();
-    const empresa = initialEmpresa.trim();
+    let cancelled = false;
+    const criterios = {
+      codigo: initialCodigo,
+      nombre: initialNombre,
+      empresa: initialEmpresa,
+    };
+    saveLastOrdenMeritoSearch(buildFilterQueryString(criterios));
 
-    if (codigo || nombre || empresa) {
-      initialSearchDoneRef.current = true;
-      const criterios = { codigo, nombre, empresa };
-      setFiltros(criterios);
-      saveLastOrdenMeritoSearch(buildFilterQueryString(criterios));
-      void ejecutarBusqueda(criterios);
-    }
+    ordenMeritoService
+      .buscarPuestos(criterios)
+      .then((data) => {
+        if (cancelled) return;
+        setPuestos(data);
+        setHasSearched(true);
+        setBackendError(null);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setPuestos([]);
+        setHasSearched(true);
+        setBackendError(
+          extractOrdenMeritoError(err, 'No fue posible buscar los puestos.')
+        );
+        setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
+    hasInitialParams,
     initialCodigo,
     initialNombre,
     initialEmpresa,
     buildFilterQueryString,
-    ejecutarBusqueda,
   ]);
 
   return {

@@ -10,62 +10,94 @@ export interface UseReporteOrdenMeritoOptions {
   evaluacionIds?: number[];
 }
 
+interface ReporteRequestState {
+  requestKey: string;
+  reporte: ReporteOrdenMeritoDTO | null;
+  error: OrdenMeritoErrorState | null;
+}
+
+const INVALID_PUESTO_ERROR: OrdenMeritoErrorState = {
+  status: 404,
+  codigo: 'RECURSO_NO_ENCONTRADO',
+  mensaje: 'Puesto no encontrado',
+  detalles: [],
+};
+
 export function useReporteOrdenMerito({
   puestoId,
   evaluacionIds,
 }: UseReporteOrdenMeritoOptions) {
-  const [reporte, setReporte] = useState<ReporteOrdenMeritoDTO | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<OrdenMeritoErrorState | null>(null);
-
   const evaluacionIdsKey = useMemo(
-    () => (evaluacionIds && evaluacionIds.length > 0 ? evaluacionIds.join(',') : ''),
+    () =>
+      evaluacionIds && evaluacionIds.length > 0 ? evaluacionIds.join(',') : '',
     [evaluacionIds]
   );
 
-  const cargarReporte = useCallback(async () => {
-    if (!Number.isInteger(puestoId) || puestoId <= 0) {
-      setReporte(null);
-      setIsLoading(false);
-      setError({
-        status: 404,
-        codigo: 'RECURSO_NO_ENCONTRADO',
-        mensaje: 'Puesto no encontrado',
-        detalles: [],
-      });
-      return;
-    }
+  const isValidPuestoId = Number.isInteger(puestoId) && puestoId > 0;
+  const [reloadCount, setReloadCount] = useState<number>(0);
 
-    setIsLoading(true);
-    setError(null);
+  const currentRequestKey = `${puestoId}|${evaluacionIdsKey}|${reloadCount}`;
 
-    try {
-      const ids = evaluacionIdsKey
-        ? evaluacionIdsKey.split(',').map((s) => Number(s))
-        : undefined;
-      const data = await ordenMeritoService.emitirReporteOrdenMerito(puestoId, ids);
-      setReporte(data);
-    } catch (err) {
-      setReporte(null);
-      setError(
-        extractOrdenMeritoError(
-          err,
-          'No fue posible emitir el reporte de orden de mérito.'
-        )
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [puestoId, evaluacionIdsKey]);
+  const [state, setState] = useState<ReporteRequestState>({
+    requestKey: '',
+    reporte: null,
+    error: null,
+  });
 
   useEffect(() => {
-    void cargarReporte();
-  }, [cargarReporte]);
+    if (!isValidPuestoId) return;
+
+    let cancelled = false;
+    const ids = evaluacionIdsKey
+      ? evaluacionIdsKey.split(',').map((s) => Number(s))
+      : undefined;
+
+    ordenMeritoService
+      .emitirReporteOrdenMerito(puestoId, ids)
+      .then((data) => {
+        if (cancelled) return;
+        setState({
+          requestKey: currentRequestKey,
+          reporte: data,
+          error: null,
+        });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setState({
+          requestKey: currentRequestKey,
+          reporte: null,
+          error: extractOrdenMeritoError(
+            err,
+            'No fue posible emitir el reporte de orden de mérito.'
+          ),
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isValidPuestoId, puestoId, evaluacionIdsKey, currentRequestKey]);
+
+  const reintentar = useCallback(() => {
+    setReloadCount((prev) => prev + 1);
+  }, []);
+
+  if (!isValidPuestoId) {
+    return {
+      reporte: null,
+      isLoading: false,
+      error: INVALID_PUESTO_ERROR,
+      reintentar,
+    };
+  }
+
+  const isLoading = state.requestKey !== currentRequestKey;
 
   return {
-    reporte,
+    reporte: isLoading ? null : state.reporte,
     isLoading,
-    error,
-    reintentar: cargarReporte,
+    error: isLoading ? null : state.error,
+    reintentar,
   };
 }
