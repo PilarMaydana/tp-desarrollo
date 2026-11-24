@@ -345,7 +345,7 @@ export const OrdenMeritoReporteScreen: React.FC<
           <section className="flex flex-col gap-3 print-section">
             <div className="flex items-center gap-2.5">
               <h2 className="text-lg md:text-xl font-bold text-[#3F2581] print:text-black print:text-base">
-                Orden de mérito ({reporte.ordenDeMerito.length})
+                Orden de mérito
               </h2>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E8F5E9] text-[#1B8354] border border-[#A5D6A7] print:bg-white print:text-black print:border-gray-500">
                 {reporte.ordenDeMerito.length}
@@ -470,8 +470,7 @@ export const OrdenMeritoReporteScreen: React.FC<
           <section className="flex flex-col gap-3 print-section">
             <div className="flex items-center gap-2.5">
               <h2 className="text-lg md:text-xl font-bold text-[#3F2581] print:text-black print:text-base">
-                Candidatos que no alcanzaron las ponderaciones mínimas (
-                {reporte.noAlcanzaronMinimos.length})
+                Candidatos que no alcanzaron las ponderaciones mínimas
               </h2>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 print:bg-white print:text-black print:border-gray-500">
                 {reporte.noAlcanzaronMinimos.length}

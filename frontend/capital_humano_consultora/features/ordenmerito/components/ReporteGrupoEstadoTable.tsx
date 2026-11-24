@@ -30,7 +30,7 @@ export const ReporteGrupoEstadoTable: React.FC<ReporteGrupoEstadoTableProps> = (
     <section className="flex flex-col gap-3 print-section">
       <div className="flex items-center gap-2.5">
         <h2 className="text-base md:text-lg font-bold text-[#3F2581] print:text-black">
-          {titulo} ({filas.length})
+          {titulo}
         </h2>
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border print:border-gray-500 print:bg-white print:text-black ${badgeClassName}`}
