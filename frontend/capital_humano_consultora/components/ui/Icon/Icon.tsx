@@ -43,6 +43,7 @@ import {
   Table,
   ClipboardCheck,
   UserCheck,
+  Printer,
   LucideProps,
 } from 'lucide-react';
 
@@ -89,7 +90,8 @@ export type IconName =
   | 'copy'
   | 'table'
   | 'clipboard_check'
-  | 'user_check';
+  | 'user_check'
+  | 'printer';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName | string;
@@ -141,6 +143,7 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   table: Table,
   clipboard_check: ClipboardCheck,
   user_check: UserCheck,
+  printer: Printer,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, size = 20, className = '', ...props }) => {

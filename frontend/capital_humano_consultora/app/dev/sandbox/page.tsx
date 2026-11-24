@@ -1,8 +1,39 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
-import { OrdenMeritoSearchScreen } from '@/features/ordenmerito';
+import {
+  OrdenMeritoReporteScreen,
+  OrdenMeritoSearchScreen,
+} from '@/features/ordenmerito';
+
+interface SandboxReporteState {
+  puestoId: number;
+  evaluacionIds?: number[];
+}
+
+function SandboxOrdenMeritoContent() {
+  const [reporteTarget, setReporteTarget] =
+    useState<SandboxReporteState | null>(null);
+
+  if (reporteTarget) {
+    return (
+      <OrdenMeritoReporteScreen
+        puestoId={reporteTarget.puestoId}
+        evaluacionIds={reporteTarget.evaluacionIds}
+        onVolver={() => setReporteTarget(null)}
+      />
+    );
+  }
+
+  return (
+    <OrdenMeritoSearchScreen
+      onEmitirReporte={(puestoId, evaluacionIds) =>
+        setReporteTarget({ puestoId, evaluacionIds })
+      }
+    />
+  );
+}
 
 export default function DevSandboxPage() {
   return (
@@ -14,7 +45,7 @@ export default function DevSandboxPage() {
           </div>
         }
       >
-        <OrdenMeritoSearchScreen />
+        <SandboxOrdenMeritoContent />
       </Suspense>
     </DashboardLayout>
   );
