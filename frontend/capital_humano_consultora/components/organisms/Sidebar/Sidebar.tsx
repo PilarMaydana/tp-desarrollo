@@ -141,18 +141,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                           );
                         }
 
+                        const isSubActive = isRouteActive(subItem.href, pathname);
+
                         return (
                           <Link
                             key={subItem.href}
                             href={subItem.href}
                             onClick={close}
-                            className="flex items-center gap-3 pl-6 pr-3 py-2 rounded-lg text-base font-medium transition-all select-none text-[#E0E0E0] hover:bg-white/10 hover:text-white"
+                            aria-current={isSubActive ? 'page' : undefined}
+                            className={`flex items-center gap-3 pl-6 pr-3 py-2 rounded-lg text-base font-medium transition-all select-none ${
+                              isSubActive
+                                ? 'bg-[#3F2581] text-white shadow-sm'
+                                : 'text-[#E0E0E0] hover:bg-white/10 hover:text-white'
+                            }`}
                           >
                             {subItem.icon && (
                               <Icon
                                 name={subItem.icon}
                                 size={18}
-                                className="text-[#CDCEE6] shrink-0"
+                                className={`shrink-0 ${
+                                  isSubActive ? 'text-white' : 'text-[#CDCEE6]'
+                                }`}
                               />
                             )}
                             <span>{subItem.label}</span>
@@ -183,17 +192,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
               );
             }
 
+            const isActive = isRouteActive(item.href, pathname);
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={close}
-                className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-base font-medium transition-all select-none text-[#E0E0E0] hover:bg-white/10 hover:text-white"
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-base font-medium transition-all select-none ${
+                  isActive
+                    ? 'bg-[#3F2581] text-white shadow-sm'
+                    : 'text-[#E0E0E0] hover:bg-white/10 hover:text-white'
+                }`}
               >
                 <Icon
                   name={item.icon}
                   size={22}
-                  className="text-[#CDCEE6]"
+                  className={isActive ? 'text-white' : 'text-[#CDCEE6]'}
                 />
                 <span>{item.label}</span>
               </Link>
