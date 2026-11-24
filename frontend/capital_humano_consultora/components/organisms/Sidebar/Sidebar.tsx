@@ -62,13 +62,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       {isOpen && (
         <div
           onClick={close}
-          className="fixed inset-0 bg-black/40 z-30 transition-opacity backdrop-blur-xs"
+          className="fixed inset-0 bg-black/40 z-30 transition-opacity backdrop-blur-xs print:hidden"
         />
       )}
 
       {/* Drawer lateral */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-[#2E2E2E] text-white z-40 transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 left-0 h-full w-72 bg-[#2E2E2E] text-white z-40 transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col print:hidden ${isOpen ? 'translate-x-0' : '-translate-x-full'
           } ${className}`}
       >
         {/* Cabecera del Sidebar */}
