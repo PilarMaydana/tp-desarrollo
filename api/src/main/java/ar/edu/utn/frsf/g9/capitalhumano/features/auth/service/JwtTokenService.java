@@ -1,19 +1,23 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.auth.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Servicio para la generación y firma de tokens JWT (JSON Web Tokens) bajo algoritmo HMAC-SHA256.
@@ -102,6 +106,80 @@ public class JwtTokenService {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Error al serializar claims de JWT", e);
         }
+    }
+
+    /**
+     * Valida la firma HMAC-SHA256 y vigencia de un token JWT y extrae sus claims principales.
+     *
+     * @param token token JWT sin prefijo "Bearer "
+     * @return claims validados o {@link Optional#empty()} si el token es inválido o expiró
+     */
+    public Optional<JwtClaims> validarYParsearToken(String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+
+        String[] partes = token.split("\\.");
+        if (partes.length != 3) {
+            return Optional.empty();
+        }
+
+        String contentToVerify = partes[0] + "." + partes[1];
+        String firmaEsperada = firmarHmacSha256(contentToVerify, secretKey);
+        if (!MessageDigest.isEqual(
+                firmaEsperada.getBytes(StandardCharsets.UTF_8),
+                partes[2].getBytes(StandardCharsets.UTF_8)
+        )) {
+            return Optional.empty();
+        }
+
+        try {
+            byte[] payloadBytes = Base64.getUrlDecoder().decode(partes[1]);
+            Map<String, Object> payload = objectMapper.readValue(payloadBytes, new TypeReference<>() {});
+
+            Long exp = aLong(payload.get("exp"));
+            if (exp == null || Instant.now().getEpochSecond() >= exp) {
+                return Optional.empty();
+            }
+
+            String subject = payload.get("sub") != null ? String.valueOf(payload.get("sub")) : null;
+            String rol = payload.get("rol") != null ? String.valueOf(payload.get("rol")) : null;
+            Long usuarioId = aLong(payload.get("usuarioId"));
+            Long cuestionarioId = aLong(payload.get("cuestionarioId"));
+
+            if (usuarioId == null || rol == null || rol.isBlank()) {
+                return Optional.empty();
+            }
+
+            return Optional.of(new JwtClaims(subject, rol, usuarioId, cuestionarioId));
+        } catch (IllegalArgumentException | IOException e) {
+            return Optional.empty();
+        }
+    }
+
+    private Long aLong(Object valor) {
+        if (valor instanceof Number num) {
+            return num.longValue();
+        }
+        if (valor instanceof String str && !str.isBlank()) {
+            try {
+                return Long.parseLong(str.trim());
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Claims extraídos de un JWT válido emitido por {@link JwtTokenService}.
+     */
+    public record JwtClaims(
+            String subject,
+            String rol,
+            Long usuarioId,
+            Long cuestionarioId
+    ) {
     }
 
     private String firmarHmacSha256(String data, String key) {
